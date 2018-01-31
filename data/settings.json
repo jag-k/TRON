@@ -1,0 +1,13 @@
+{
+  "players": ["player1", "player2"],
+  "players_color": {
+    "default": "#006def",
+    "player1": "#00ff00",
+    "player2": "#00ffff"
+  },
+  "points_price": {
+    "hard": 10,
+    "normal": 5,
+    "easy": 1
+  }
+}
