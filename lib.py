@@ -1,13 +1,22 @@
 import json
 from pprint import pprint
 
-import pygame
-pygame.init()
+from model_converter import *
 
-UP = pygame.K_UP
-DOWN = pygame.K_DOWN
-RIGHT = pygame.K_RIGHT
-LEFT = pygame.K_LEFT
+
+# CONSTANTS
+
+
+K_UP = pygame.K_UP
+K_DOWN = pygame.K_DOWN
+K_RIGHT = pygame.K_RIGHT
+K_LEFT = pygame.K_LEFT
+
+W = pygame.K_w
+A = pygame.K_a
+S = pygame.K_s
+D = pygame.K_d
+
 
 D_UP = (0, -1)
 D_DOWN = (0, 1)
@@ -15,12 +24,48 @@ D_RIGHT = (1, 0)
 D_LEFT = (-1, 0)
 D_CENTER = (0, 0)
 
-W = pygame.K_w
-A = pygame.K_a
-S = pygame.K_s
-D = pygame.K_d
+
+UP = "up"
+DOWN = "down"
+RIGHT = "right"
+LEFT = "left"
+CENTER = "center"
+
+
+CONVERT_DIRECTIONAL = {
+    UP: D_UP,
+    DOWN: D_DOWN,
+    LEFT: D_LEFT,
+    RIGHT: D_RIGHT,
+    CENTER: D_CENTER,
+
+    D_UP: UP,
+    D_DOWN: DOWN,
+    D_LEFT: LEFT,
+    D_RIGHT: RIGHT,
+    D_CENTER: CENTER
+}
+
+
+REVERSE_DIRECTIONAL = {
+    UP: DOWN,
+    DOWN: UP,
+    LEFT: RIGHT,
+    RIGHT: LEFT,
+    CENTER: CENTER,
+
+    D_UP: D_DOWN,
+    D_DOWN: D_UP,
+    D_LEFT: D_RIGHT,
+    D_RIGHT: D_LEFT,
+    D_CENTER: D_CENTER,
+}
+
 
 STORE_COEFFICIENT = 1
+
+
+# SETTINGS
 
 game_difficulty = 'normal'
 
@@ -39,6 +84,9 @@ def save_setting():
     update_settings()
 
 
+# ANOTHER METHODS AND CLASSES
+
+
 def edit_pos(pos1, pos2):
     x1, y1 = pos1
     x2, y2 = pos2
@@ -55,9 +103,7 @@ class Store:
     @property
     def get_store(self):
         with open(self.file) as file:
-            res = [i.split(': ') for i in file.readlines()]
-        print(res)
-        return dict(res)
+            return dict(i.split(': ') for i in file.readlines())
 
     def save_store(self):
         result = self.get_store
@@ -100,20 +146,17 @@ class Track(EmptyCell):
 
     def render(self, surface):
         rect: pygame.Rect = self.board.rect(self.x, self.y)
+        convert = {
+            CENTER: rect.center,
+            UP: (rect.centerx, rect.top),
+            DOWN: (rect.centerx, rect.bottom),
+            RIGHT: (rect.right, rect.centery),
+            LEFT: (rect.left, rect.centery)}
 
-        def draw_line(point, size=4):
-            if point == D_CENTER:
-                p = rect.center
-            elif point == D_UP:
-                p = (rect.centerx, rect.top)
-            elif point == D_DOWN:
-                p = (rect.centerx, rect.bottom)
-            elif point == D_RIGHT:
-                p = (rect.right, rect.centery)
-            elif point == D_LEFT:
-                p = (rect.left, rect.centery)
-            else:
-                raise pygame.error
+        def draw_line(point, size=None):
+            if size is None:
+                size = settings['line_size']
+            p = convert[point]
             pygame.draw.line(surface, self.player.color, rect.center, p, size)
 
         draw_line(self.start_dir)
@@ -124,7 +167,7 @@ class Player(EmptyCell):
     def __init__(self, x, y, direction, board, name):
         super().__init__(x, y, board)
         self.start = self.startx, self.starty = x, y
-        self.old_d = D_CENTER
+        self.old_d = CENTER
         self.d = direction
         self.live = True
         self.name = name
@@ -142,44 +185,45 @@ class Player(EmptyCell):
     def next(self):
         board = self.board.board
         if self in [j for i in board for j in i]:
-            x, y = edit_pos(self.pos, self.d)
-            print(type(board[x][y]))
+            x, y = edit_pos(self.pos, CONVERT_DIRECTIONAL[self.d])
+
             if type(board[x][y]) is EmptyCell:
+
                 track = Track(x, y, self.board, self, (self.old_d, self.d))
                 board[self.x][self.y] = track
                 self.tracks.append(track)
+
+                self.edit_dir(self.d)
+
                 self.store.add_points(settings['points_price'][game_difficulty])
+
                 self.x, self.y = x, y
                 board[x][y] = self
-                self.board.board = board
-                pprint(self.board.board)
             else:
                 for i in self.tracks:
                     i.delete()
                 self.store.save_store()
                 self.delete()
-            print(self.pos)
 
     def render(self, surface):
         pygame.draw.rect(surface, self.color, self.board.rect(self.pos), 0)
 
     def edit_dir(self, dir):
-        self.old_d = self.d
+        self.old_d = REVERSE_DIRECTIONAL[self.d] if dir == self.d else self.d
         self.d = dir
-        print("Old: %s, New: %s" % (self.old_d, self.d))
 
     def get_event(self, event):
         if event.type == pygame.KEYDOWN:
-            print(event)
-            if event.key == UP:
-                self.edit_dir(D_UP)
-            elif event.key == DOWN:
-                self.edit_dir(D_DOWN)
-            elif event.key == LEFT:
-                self.edit_dir(D_LEFT)
-            elif event.key == RIGHT:
-                self.edit_dir(D_RIGHT)
-            print(self.pos)
+            if event.key is None:
+                pass
+            if event.key == K_UP:
+                self.edit_dir(UP)
+            elif event.key == K_DOWN:
+                self.edit_dir(DOWN)
+            elif event.key == K_LEFT:
+                self.edit_dir(LEFT)
+            elif event.key == K_RIGHT:
+                self.edit_dir(RIGHT)
 
 
 class Board:
@@ -190,8 +234,9 @@ class Board:
         self.top = 10
         self.left = 10
         self.start_pos = start_pos
+        self.show_grid = True
         name = map(str, settings['players'])
-        self.board = [[Player(x, y, D_UP, self, next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
+        self.board = [[Player(x, y, UP, self, next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
                        for y in range(height)]
                       for x in range(width)]
 
@@ -223,7 +268,8 @@ class Board:
                 render = getattr(self.board[x][y], "render", None)
                 if callable(render):
                     self.board[x][y].render(surface)
-                pygame.draw.rect(surface, (255, 255, 255), self.rect(x, y), 1)
+                if self.show_grid:
+                    pygame.draw.rect(surface, (255, 255, 255), self.rect(x, y), 1)
 
     def rect(self, x, y=None):
         if y is None:
@@ -232,6 +278,8 @@ class Board:
                            self.cell_size, self.cell_size)
 
     def get_event(self, event):
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
+            self.show_grid = not self.show_grid
         for i in filter(lambda x: type(x) == Player, self.__iter__()):
             get_event = getattr(i, "get_event", None)
             if callable(get_event):

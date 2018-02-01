@@ -9,5 +9,6 @@
     "hard": 10,
     "normal": 5,
     "easy": 1
-  }
+  },
+  "line_size": 4
 }
