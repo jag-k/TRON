@@ -51,7 +51,13 @@ def select(title="", *quest, numb=True, default=True, lang='eng'):
 
 
 def model_name_format(s=str()):
-    return os.path.join('data', 'models', s.lower().strip().strip('.model') + '.model')
+    return os.path.join('data', 'models', s.lower().strip().rstrip('.model') + '.model')
+
+
+def save():
+    with open(model_name, 'w') as file:
+        file.write(raw)
+    print('Model \x1b[4;1;32m%s\x1b[0m was been %s!' % (model_name, ['created', 're-saved'][edited]))
 
 
 class Board:
@@ -103,10 +109,9 @@ class Board:
 
 
 pygame.init()
-res = select('Select', 'edit', 'create')
 edited = False
 
-if res[0] == 'edit':
+if select('Select', 'edit', 'create')[0] == 'edit':
     model_name = model_name_format(select("Select Model",
                                           *list(filter(lambda x: x.endswith('.model'), os.listdir('data/models/'))))[0])
     size = len(open(model_name).readline())-1
@@ -151,19 +156,13 @@ while running:
 raw = '\n'.join(''.join(str(j) for j in i) for i in np.transpose(np.array(board.board)))
 pygame.quit()
 
-save = False
 
 try:
     if model_name is None:
         model_name = model_name_format(input('Enter model name (without \x1b[4;1m.model\x1b[0m expand): '))
-        save = True
-    else:
-        save = select('Save model?')
-
-    if save:
-        with open(model_name, 'w') as file:
-            file.write(raw)
-        print('Model \x1b[4;1;32m%s\x1b[0m was been %s!' % (model_name, ['created', 're-saved'][edited]))
+        save()
+    elif select('Save model?'):
+        save()
 except KeyboardInterrupt:
     print('\n\x1b[31mMODEL DOESN\'T SAVE\x1b[0m')
     SystemExit()
