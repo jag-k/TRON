@@ -15,11 +15,11 @@ class Model:
     def __repr__(self):
         return '<Model at "%s.model">' % self.model['name']
 
-    def render(self, surface, rect, color=None):
+    def render(self, surface, rect, color=None, bg=None):
         if self.model['image'] is None:
             if color is None:
                 raise ValueError
-            self.model = self.update(self.model['name'], color)
+            self.model = self.update(self.model['name'], color, bg)
         image = pygame.transform.scale(self.model['image'], rect.size)
         surface.blit(image, rect)
     
@@ -34,18 +34,20 @@ class Model:
         return pygame.Color(color)
 
     @staticmethod
-    def image(color, model):
+    def image(color, model, bg=None):
         color = Model.to_color(color)
         if color is None:
             return None
         image = pygame.Surface(model['size'])
+        if bg is not None:
+            image.fill(Model.to_color(bg))
         for y in range(model['y']):
             for x in range(model['x']):
                 if model['model'][x][y] is not None:
                     pygame.draw.line(image, Model.to_color(color), (y, x), (y, x))
-        return image
+        return image.convert_alpha(image)
     
-    def update(self, model_name, color=None):
+    def update(self, model_name, color=None, bg=None):
         model = {"name": os.path.split(model_name)[-1].lower().rstrip('.model')}
         model["full_name"] = os.path.join('data', 'models', model["name"]+'.model')
         model['raw'] = [[y for y in x] for x in map(lambda x: x.strip(), open(model['full_name']).readlines())]
@@ -55,7 +57,7 @@ class Model:
                           for x in range(len(model['raw']))]
 
         model['size'] = model['x'], model['y'] = len(model['raw']), len(model['raw'][0])
-        model['image'] = self.image(color, model)
+        model['image'] = self.image(color, model, bg)
         return model
 
 

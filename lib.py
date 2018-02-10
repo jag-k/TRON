@@ -178,23 +178,21 @@ class Player(EmptyCell):
 
     def next(self):
         board = self.board.board
-        if self in [j for i in board for j in i]:
-            x, y = edit_pos(self.pos, CONVERT_DIRECTIONAL[self.d])
+        if self in self.board.flat:
+            x, y = self.x, self.y
 
-            if type(board[x][y]) is EmptyCell:
-                track = Track(x, y, self.board, self, (self.old_d, self.d))
+            nextx, nexty = edit_pos(self.pos, CONVERT_DIRECTIONAL[self.d])
+
+            if type(board[nextx][nexty]) is EmptyCell:
+                track = Track(x, y, self.board, self, (self.d, REVERSE_DIRECTIONAL[self.old_d]))
                 board[self.x][self.y] = track
                 self.tracks.append(track)
-
-                # self.edit_dir(self.d)
-
+                self.edit_dir(self.d)
                 self.store.add_points(settings['points_price'][game_difficulty])
 
-                self.x, self.y = x, y
-                board[x][y] = self
+                self.x, self.y = nextx, nexty
+                board[self.x][self.y] = self
             else:
-                for i in self.tracks:
-                    i.delete()
                 self.store.save_store()
                 self.delete()
                 print(self.store)
@@ -204,12 +202,13 @@ class Player(EmptyCell):
             p += ' '.join(str(j) for j in i)+'\n'
         print(p)
 
-    def render(self, surface):
-        pygame.draw.rect(surface, self.color, self.board.rect(self.pos), 0)
+    def render(self, surface, bg=None):
+        m = models['players'][self.d[0]]
+        m.render(surface, self.board.rect(self.pos), self.color, bg)
 
     def edit_dir(self, dir):
         if self.d != REVERSE_DIRECTIONAL[dir]:
-            self.old_d = REVERSE_DIRECTIONAL[self.d] if dir == self.d else self.d
+            self.old_d = self.d
             self.d = dir
 
     def get_event(self, event):
@@ -233,7 +232,7 @@ class Track(EmptyCell):
     def __str__(self):
         return "T"
 
-    def render(self, surface):
+    def render(self, surface, bg=None):
         rect = self.board.rect(self.x, self.y)
         convert = {
             CENTER: rect.center,
@@ -242,15 +241,12 @@ class Track(EmptyCell):
             RIGHT: (rect.right, rect.centery),
             LEFT: (rect.left, rect.centery)}
 
-        def draw_line(point, size=None):
-            if size is None:
-                size = settings['line_size']
-            p = convert[point]
-            pygame.draw.line(surface, self.player.color, rect.center, p, size)
-
         # draw_line(self.start_dir)
         # draw_line(self.end_dir)
-        pygame.draw.circle(surface, (255, 0, 0), rect.center, rect.w//2)
+
+        m = models['tracks'][''.join(sorted([self.start_dir[0], self.end_dir[0]]))]
+        m.render(surface, self.board.rect(self.pos), self.player.color, bg)
+        # pygame.draw.circle(surface, (255, 0, 0), rect.center, rect.w//2)
 
     def update(self, *args):
         if self.player not in self.board.flat:
@@ -304,12 +300,12 @@ class Board:
         self.top = top if top is not None else self.top
         self.cell_size = cell_size if cell_size is not None else self.cell_size
 
-    def render(self, surface):
+    def render(self, surface, bg=None):
         for x in range(self.width):
             for y in range(self.height):
                 render = getattr(self.board[x][y], "render", None)
                 if callable(render):
-                    self.board[x][y].render(surface)
+                    self.board[x][y].render(surface, bg)
                 if self.show_grid:
                     pygame.draw.rect(surface, (255, 255, 255), self.rect(x, y), 1)
 

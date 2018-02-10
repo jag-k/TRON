@@ -7,6 +7,7 @@ size = width, height = board.get_size
 pygame.display.set_mode(size)
 screen = pygame.display.get_surface()
 running = True
+bg = pygame.Color("blue")
 
 while running:
     for event in pygame.event.get():
@@ -17,8 +18,8 @@ while running:
                 board.next_step()
             board.get_event(event)
 
-    screen.fill((0, 0, 0))
-    board.render(screen)
+    screen.fill(bg)
+    board.render(screen, bg)
     board.update()
     pygame.display.flip()
 
