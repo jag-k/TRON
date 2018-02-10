@@ -2,9 +2,10 @@ from lib import *
 
 
 pygame.init()
-board = Board(20, 20, 20, (5, 5))
+board = Board(20, 20, 25, (5, 5))
 size = width, height = board.get_size
-screen = pygame.display.set_mode(size)
+pygame.display.set_mode(size)
+screen = pygame.display.get_surface()
 running = True
 
 while running:
@@ -18,6 +19,7 @@ while running:
 
     screen.fill((0, 0, 0))
     board.render(screen)
+    board.update()
     pygame.display.flip()
 
 pygame.quit()

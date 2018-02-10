@@ -4,47 +4,80 @@ import os
 
 pygame.init()
 
-
-def to_color(color):
-    if type(color) is pygame.Color:
-        return color
-    if type(color) is tuple:
-        return pygame.Color(*color)
-    return pygame.Color(color)
+SYMBOL_CODE = {".": None,
+               "@": 'C'}
 
 
 class Model:
-    def __init__(self, model_name, model_size, board, color):
-        model_name = os.path.split(model_name)[-1].lower().lstrip('.model')
-        self.rotate = 0
-        self.model_size = model_size
-        self.pos = []
-        self.board = board
-        self.color = None if color is None else to_color(color)
-        self.model = open(os.path.join(os.getcwd(), 'data', 'texture', model_name)+'.model').readlines()
+    def __init__(self, model_name, color=None):
+        self.model = self.update(model_name, color)
 
+    def __repr__(self):
+        return '<Model at "%s.model">' % self.model['name']
 
-    def add_position(self, x, y=None, color=None, rotate=None):
-        if y is None:
-            x, y = x
+    def render(self, surface, rect, color=None):
+        if self.model['image'] is None:
+            if color is None:
+                raise ValueError
+            self.model = self.update(self.model['name'], color)
+        image = pygame.transform.scale(self.model['image'], rect.size)
+        surface.blit(image, rect)
+    
+    @staticmethod
+    def to_color(color):
         if color is None:
-            color = self.color
-        else:
-            color = to_color(color)
-        if rotate is None:
-            rotate = self.rotate
+            return None
+        if type(color) is pygame.Color:
+            return color
+        if type(color) is tuple:
+            return pygame.Color(*color)
+        return pygame.Color(color)
 
-        self.pos.append([x, y, color, rotate])
+    @staticmethod
+    def image(color, model):
+        color = Model.to_color(color)
+        if color is None:
+            return None
+        image = pygame.Surface(model['size'])
+        for y in range(model['y']):
+            for x in range(model['x']):
+                if model['model'][x][y] is not None:
+                    pygame.draw.line(image, Model.to_color(color), (y, x), (y, x))
+        return image
+    
+    def update(self, model_name, color=None):
+        model = {"name": os.path.split(model_name)[-1].lower().rstrip('.model')}
+        model["full_name"] = os.path.join('data', 'models', model["name"]+'.model')
+        model['raw'] = [[y for y in x] for x in map(lambda x: x.strip(), open(model['full_name']).readlines())]
 
-    def update(self):
-        for i in open(os.path.join(os.getcwd(), 'data', 'texture', model_name)+'.model').read().split('\n'):
-            for j in
+        model['model'] = [[SYMBOL_CODE[model['raw'][x][y]]
+                           for y in range(len(model['raw'][x]))]
+                          for x in range(len(model['raw']))]
 
-    def render(self, surface):
-        for r_x, r_y, color, rotate in self.pos:
-            rect: pygame.Rect = self.board.rect(r_x, r_y)
-            start_x, start_y = rect.x, rect.y
-            for x in range(rect.width+1):
-                for y in range(rect.width+1):
-                    if
+        model['size'] = model['x'], model['y'] = len(model['raw']), len(model['raw'][0])
+        model['image'] = self.image(color, model)
+        return model
 
+
+if __name__ == '__main__':
+    size = width, height = 600, 400
+    screen = pygame.display.set_mode(size)
+    color = (255, 5, 20)
+    p = Model('r_player', color)
+    t = Model('dr_track', color)
+    c = Model('cu_track', color)
+    r = Model('du_track', color)
+
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+        t.render(screen, pygame.Rect(25, 25, 100, 100))
+        p.render(screen, pygame.Rect(125, 25, 100, 100))
+        r.render(screen, pygame.Rect(25, 125, 100, 100))
+        c.render(screen, pygame.Rect(25, 225, 100, 100))
+
+        pygame.display.flip()
+
+    pygame.quit()

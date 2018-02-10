@@ -2,7 +2,11 @@ import json
 from pprint import pprint
 
 from model_converter import *
+import pygame
 
+import os
+
+pygame.init()
 
 # CONSTANTS
 
@@ -69,14 +73,30 @@ STORE_COEFFICIENT = 1
 
 game_difficulty = 'normal'
 
+models = {
+    "players": dict(
+        (i.split('_player.model')[0], Model(i))
+        for i in filter(lambda x: x.endswith('player.model'),
+                        os.listdir('data/models'))
+    ),
+
+    "tracks": dict(
+        (i.split('_track.model')[0], Model(i))
+        for i in filter(lambda x: x.endswith('track.model'),
+                        os.listdir('data/models'))
+    )
+}
+
+pprint(models)
+
 
 def update_settings():
-    settings: dict = json.load(open('./data/settings.json'))
+    settings = json.load(open('./data/settings.json'))
     return settings
 
 
-settings: dict = update_settings()
-pprint(settings)
+settings = update_settings()
+# pprint(settings)
 
 
 def save_setting():
@@ -86,7 +106,6 @@ def save_setting():
 
 # ANOTHER METHODS AND CLASSES
 
-
 def edit_pos(pos1, pos2):
     x1, y1 = pos1
     x2, y2 = pos2
@@ -95,26 +114,26 @@ def edit_pos(pos1, pos2):
 
 class Store:
     def __init__(self, player):
-        self.file = './data/store.data'
-        self.player: Player = player
+        self.file = './data/store.json'
+        self.player = player
         self.count = 0
         self.high_store = self.get_store[player.name] if player.name in self.get_store else 0
 
+    def __str__(self):
+        return "%s: %d (HS: %d)" % (self.player.name, self.count, self.high_store)
+
     @property
     def get_store(self):
-        with open(self.file) as file:
-            return dict(i.split(': ') for i in file.readlines())
+        return json.load(open(self.file))
 
     def save_store(self):
         result = self.get_store
         result[self.player.name] = self.high_store
-        with open(self.file, 'w') as file:
-            file.write('\n'.join(map(lambda x: ': '.join(x), sorted([(i, result[i]) for i in result],
-                                                                    key=lambda x: x[1], reverse=True))))
+        json.dump(result, open(self.file, 'w'), indent=2)
 
     def add_points(self, count):
         self.count += count*STORE_COEFFICIENT
-        if self.count > int(self.high_store):
+        if self.count > self.high_store:
             self.high_store = self.count
         return self.save_store
 
@@ -122,7 +141,13 @@ class Store:
 class EmptyCell:
     def __init__(self, x, y, board):
         self.x, self.y = x, y
-        self.board: Board = board
+        self.board = board
+
+    # def __repr__(self):
+    #     return "<%s object at position %s>" % (type(self).__name__, self.pos)
+
+    def __repr__(self):
+        return "%s%s" % (type(self).__name__[0], self.pos)
 
     def __str__(self):
         return "E"
@@ -133,34 +158,6 @@ class EmptyCell:
 
     def delete(self):
         self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board)
-
-
-class Track(EmptyCell):
-    def __init__(self, x, y, board, player, dirs):
-        super().__init__(x, y, board)
-        self.player = player
-        self.start_dir, self.end_dir = dirs
-
-    def __str__(self):
-        return "T"
-
-    def render(self, surface):
-        rect: pygame.Rect = self.board.rect(self.x, self.y)
-        convert = {
-            CENTER: rect.center,
-            UP: (rect.centerx, rect.top),
-            DOWN: (rect.centerx, rect.bottom),
-            RIGHT: (rect.right, rect.centery),
-            LEFT: (rect.left, rect.centery)}
-
-        def draw_line(point, size=None):
-            if size is None:
-                size = settings['line_size']
-            p = convert[point]
-            pygame.draw.line(surface, self.player.color, rect.center, p, size)
-
-        draw_line(self.start_dir)
-        draw_line(self.end_dir)
 
 
 class Player(EmptyCell):
@@ -176,9 +173,6 @@ class Player(EmptyCell):
         self.color = pygame.Color(settings['players_color'][name] if name in settings['players_color']
                                   else settings['players_color']['default'])
 
-    def __repr__(self):
-        return self.__str__()
-
     def __str__(self):
         return "P"
 
@@ -188,12 +182,11 @@ class Player(EmptyCell):
             x, y = edit_pos(self.pos, CONVERT_DIRECTIONAL[self.d])
 
             if type(board[x][y]) is EmptyCell:
-
                 track = Track(x, y, self.board, self, (self.old_d, self.d))
                 board[self.x][self.y] = track
                 self.tracks.append(track)
 
-                self.edit_dir(self.d)
+                # self.edit_dir(self.d)
 
                 self.store.add_points(settings['points_price'][game_difficulty])
 
@@ -204,18 +197,23 @@ class Player(EmptyCell):
                     i.delete()
                 self.store.save_store()
                 self.delete()
+                print(self.store)
+
+        p = ''
+        for i in Board.rotate(board):
+            p += ' '.join(str(j) for j in i)+'\n'
+        print(p)
 
     def render(self, surface):
         pygame.draw.rect(surface, self.color, self.board.rect(self.pos), 0)
 
     def edit_dir(self, dir):
-        self.old_d = REVERSE_DIRECTIONAL[self.d] if dir == self.d else self.d
-        self.d = dir
+        if self.d != REVERSE_DIRECTIONAL[dir]:
+            self.old_d = REVERSE_DIRECTIONAL[self.d] if dir == self.d else self.d
+            self.d = dir
 
     def get_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if event.key is None:
-                pass
             if event.key == K_UP:
                 self.edit_dir(UP)
             elif event.key == K_DOWN:
@@ -224,6 +222,39 @@ class Player(EmptyCell):
                 self.edit_dir(LEFT)
             elif event.key == K_RIGHT:
                 self.edit_dir(RIGHT)
+
+
+class Track(EmptyCell):
+    def __init__(self, x, y, board, player=Player, dirs=(CENTER, UP)):
+        super().__init__(x, y, board)
+        self.player = player
+        self.start_dir, self.end_dir = dirs
+
+    def __str__(self):
+        return "T"
+
+    def render(self, surface):
+        rect = self.board.rect(self.x, self.y)
+        convert = {
+            CENTER: rect.center,
+            UP: (rect.centerx, rect.top),
+            DOWN: (rect.centerx, rect.bottom),
+            RIGHT: (rect.right, rect.centery),
+            LEFT: (rect.left, rect.centery)}
+
+        def draw_line(point, size=None):
+            if size is None:
+                size = settings['line_size']
+            p = convert[point]
+            pygame.draw.line(surface, self.player.color, rect.center, p, size)
+
+        # draw_line(self.start_dir)
+        # draw_line(self.end_dir)
+        pygame.draw.circle(surface, (255, 0, 0), rect.center, rect.w//2)
+
+    def update(self, *args):
+        if self.player not in self.board.flat:
+            self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board)
 
 
 class Board:
@@ -236,7 +267,7 @@ class Board:
         self.start_pos = start_pos
         self.show_grid = True
         name = map(str, settings['players'])
-        self.board = [[Player(x, y, UP, self, next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
+        self.board = [[Player(x, y, RIGHT, self, next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
                        for y in range(height)]
                       for x in range(width)]
 
@@ -248,8 +279,19 @@ class Board:
         return self.width * self.cell_size + self.left * 2, self.height * self.cell_size + self.top * 2
 
     @property
+    def flat(self):
+        return list(j for i in self.board for j in i)
+
+    @property
     def get_players(self):
         return [j for i in self.board for j in i if type(j) is Player]
+
+    @staticmethod
+    def rotate(array, rotate=1):
+        res = array
+        for i in range(rotate):
+            res = list(zip(*res[::-1]))
+        return res
 
     def __iter__(self):
         res = []
@@ -280,7 +322,7 @@ class Board:
     def get_event(self, event):
         if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
             self.show_grid = not self.show_grid
-        for i in filter(lambda x: type(x) == Player, self.__iter__()):
+        for i in filter(lambda x: type(x) == Player, self.flat):
             get_event = getattr(i, "get_event", None)
             if callable(get_event):
                 i.get_event(event)
@@ -288,3 +330,9 @@ class Board:
     def next_step(self):
         for p in self.get_players:
             p.next()
+
+    def update(self, *args):
+        for i in self.flat:
+            update = getattr(i, "update", None)
+            if callable(update):
+                i.update(*args)
