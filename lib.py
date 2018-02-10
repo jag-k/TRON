@@ -10,12 +10,6 @@ pygame.init()
 
 # CONSTANTS
 
-
-K_UP = pygame.K_UP
-K_DOWN = pygame.K_DOWN
-K_RIGHT = pygame.K_RIGHT
-K_LEFT = pygame.K_LEFT
-
 W = pygame.K_w
 A = pygame.K_a
 S = pygame.K_s
@@ -169,6 +163,9 @@ class Player(EmptyCell):
         self.live = True
         self.name = name
         self.tracks = []
+        self.step = True
+        self.next_count = 0
+        self.render_count = -1
         self.store = Store(self)
         self.color = pygame.Color(settings['players_color'][name] if name in settings['players_color']
                                   else settings['players_color']['default'])
@@ -183,7 +180,8 @@ class Player(EmptyCell):
 
             nextx, nexty = edit_pos(self.pos, CONVERT_DIRECTIONAL[self.d])
 
-            if type(board[nextx][nexty]) is EmptyCell:
+            if nextx in range(self.board.width) and nexty in range(self.board.height) \
+                    and type(board[nextx][nexty]) is EmptyCell:
                 track = Track(x, y, self.board, self, (self.d, REVERSE_DIRECTIONAL[self.old_d]))
                 board[self.x][self.y] = track
                 self.tracks.append(track)
@@ -192,15 +190,12 @@ class Player(EmptyCell):
 
                 self.x, self.y = nextx, nexty
                 board[self.x][self.y] = self
+                self.next_count += 1
             else:
                 self.store.save_store()
                 self.delete()
                 print(self.store)
-
-        p = ''
-        for i in Board.rotate(board):
-            p += ' '.join(str(j) for j in i)+'\n'
-        print(p)
+            self.step = True
 
     def render(self, surface, bg=None):
         m = models['players'][self.d[0]]
@@ -212,15 +207,19 @@ class Player(EmptyCell):
             self.d = dir
 
     def get_event(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == K_UP:
+        if event.type == pygame.KEYDOWN and self.step:
+            if event.key == pygame.K_UP:
                 self.edit_dir(UP)
-            elif event.key == K_DOWN:
+                self.step = False
+            elif event.key == pygame.K_DOWN:
                 self.edit_dir(DOWN)
-            elif event.key == K_LEFT:
+                self.step = False
+            elif event.key == pygame.K_LEFT:
                 self.edit_dir(LEFT)
-            elif event.key == K_RIGHT:
+                self.step = False
+            elif event.key == pygame.K_RIGHT:
                 self.edit_dir(RIGHT)
+                self.step = False
 
 
 class Track(EmptyCell):
