@@ -5,7 +5,6 @@ def select(title="", *quest, numb=True, default=True, lang='eng'):
     :param numb: Нумеровать ли вопросы?
     :param default: Что будет если строка ввода будет пуста (если в quest пусто) (действие по умолчанию)?
     :param lang: Язык (eng/rus)
-    :param input: Ввод
     :param out: Вывод (по умолчанию в консоль)
     :return: Bool (если в quest пусто) или (элемент quest, индекс элемента quest) (если в quest есть элементы)
     """

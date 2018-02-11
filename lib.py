@@ -1,5 +1,6 @@
 import json
 from pprint import pprint
+import sys
 
 from model_converter import *
 import pygame
@@ -62,10 +63,8 @@ REVERSE_DIRECTIONAL = {
 
 STORE_COEFFICIENT = 1
 
+# MODELS
 
-# SETTINGS
-
-game_difficulty = 'normal'
 
 models = {
     "players": dict(
@@ -83,19 +82,26 @@ models = {
 
 pprint(models)
 
+# SETTINGS
+
+game_difficulty = 'normal'
+
+
+settings = {}
+
 
 def update_settings():
+    global settings
     settings = json.load(open('./data/settings.json'))
     return settings
 
 
-settings = update_settings()
-# pprint(settings)
-
-
 def save_setting():
     json.dump(settings, open('./data/settings.json', 'w'), indent=2)
-    update_settings()
+    return update_settings()
+
+
+update_settings()
 
 
 # ANOTHER METHODS AND CLASSES
@@ -104,6 +110,11 @@ def edit_pos(pos1, pos2):
     x1, y1 = pos1
     x2, y2 = pos2
     return x1+x2, y1+y2
+
+
+def terminate():
+    pygame.quit()
+    sys.exit()
 
 
 class Store:
@@ -137,9 +148,6 @@ class EmptyCell:
         self.x, self.y = x, y
         self.board = board
 
-    # def __repr__(self):
-    #     return "<%s object at position %s>" % (type(self).__name__, self.pos)
-
     def __repr__(self):
         return "%s%s" % (type(self).__name__[0], self.pos)
 
@@ -155,13 +163,14 @@ class EmptyCell:
 
 
 class Player(EmptyCell):
-    def __init__(self, x, y, direction, board, name):
+    def __init__(self, x, y, direction, board, name, key_control):
         super().__init__(x, y, board)
         self.start = self.startx, self.starty = x, y
         self.old_d = CENTER
         self.d = direction
         self.live = True
         self.name = name
+        self.control = key_control
         self.tracks = []
         self.step = True
         self.next_count = 0
@@ -197,9 +206,9 @@ class Player(EmptyCell):
                 print(self.store)
             self.step = True
 
-    def render(self, surface, bg=None):
+    def render(self, surface):
         m = models['players'][self.d[0]]
-        m.render(surface, self.board.rect(self.pos), self.color, bg)
+        m.render(surface, self.board.rect(self.pos), self.color)
 
     def edit_dir(self, dir):
         if self.d != REVERSE_DIRECTIONAL[dir]:
@@ -208,17 +217,8 @@ class Player(EmptyCell):
 
     def get_event(self, event):
         if event.type == pygame.KEYDOWN and self.step:
-            if event.key == pygame.K_UP:
-                self.edit_dir(UP)
-                self.step = False
-            elif event.key == pygame.K_DOWN:
-                self.edit_dir(DOWN)
-                self.step = False
-            elif event.key == pygame.K_LEFT:
-                self.edit_dir(LEFT)
-                self.step = False
-            elif event.key == pygame.K_RIGHT:
-                self.edit_dir(RIGHT)
+            if str(event.key) in self.control:
+                self.edit_dir(self.control[str(event.key)])
                 self.step = False
 
 
@@ -231,21 +231,9 @@ class Track(EmptyCell):
     def __str__(self):
         return "T"
 
-    def render(self, surface, bg=None):
-        rect = self.board.rect(self.x, self.y)
-        convert = {
-            CENTER: rect.center,
-            UP: (rect.centerx, rect.top),
-            DOWN: (rect.centerx, rect.bottom),
-            RIGHT: (rect.right, rect.centery),
-            LEFT: (rect.left, rect.centery)}
-
-        # draw_line(self.start_dir)
-        # draw_line(self.end_dir)
-
+    def render(self, surface):
         m = models['tracks'][''.join(sorted([self.start_dir[0], self.end_dir[0]]))]
-        m.render(surface, self.board.rect(self.pos), self.player.color, bg)
-        # pygame.draw.circle(surface, (255, 0, 0), rect.center, rect.w//2)
+        m.render(surface, self.board.rect(self.pos), self.player.color)
 
     def update(self, *args):
         if self.player not in self.board.flat:
@@ -258,20 +246,29 @@ class Board:
         self.height = height
         self.cell_size = cell_size
         self.top = 10
+        self.bottom = self.top
         self.left = 10
+        self.right = self.left
         self.start_pos = start_pos
         self.show_grid = True
-        name = map(str, settings['players'])
-        self.board = [[Player(x, y, RIGHT, self, next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
+        name = map(lambda x: (x, settings['players_control'][x]), settings['players'])
+        self.board = [[Player(x, y, RIGHT, self, *next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
                        for y in range(height)]
                       for x in range(width)]
 
     def set_board(self, board):
         self.board = board
 
+    def edit_padding(self, top=None, left=None, bottom=None, right=None):
+        self.top = top if top is not None else self.top
+        self.left = left if left is not None else self.left
+        self.bottom = bottom if bottom is not None else self.bottom
+        self.right = right if right is not None else self.right
+
     @property
     def get_size(self):
-        return self.width * self.cell_size + self.left * 2, self.height * self.cell_size + self.top * 2
+        return self.width * self.cell_size + self.left + self.right, \
+               self.height * self.cell_size + self.top + self.bottom
 
     @property
     def flat(self):
@@ -279,7 +276,7 @@ class Board:
 
     @property
     def get_players(self):
-        return [j for i in self.board for j in i if type(j) is Player]
+        return list(filter(lambda x: type(x) is Player, self.flat))
 
     @staticmethod
     def rotate(array, rotate=1):
@@ -289,24 +286,26 @@ class Board:
         return res
 
     def __iter__(self):
-        res = []
-        for i in self.board:
-            res += i
-        return res
+        return self.flat
 
     def set_view(self, left=None, top=None, cell_size=None):
         self.left = left if left is not None else self.left
         self.top = top if top is not None else self.top
         self.cell_size = cell_size if cell_size is not None else self.cell_size
 
-    def render(self, surface, bg=None):
+    def render(self, surface):
         for x in range(self.width):
             for y in range(self.height):
                 render = getattr(self.board[x][y], "render", None)
                 if callable(render):
-                    self.board[x][y].render(surface, bg)
+                    self.board[x][y].render(surface)
                 if self.show_grid:
                     pygame.draw.rect(surface, (255, 255, 255), self.rect(x, y), 1)
+                else:
+                    pygame.draw.rect(surface, (255, 255, 255),
+                                     ((self.left, self.top),
+                                      (self.width*self.cell_size, self.height*self.cell_size)),
+                                     1)
 
     def rect(self, x, y=None):
         if y is None:
