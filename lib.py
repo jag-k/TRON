@@ -241,7 +241,7 @@ class Track(EmptyCell):
 
 
 class Board:
-    def __init__(self, width=100, height=100, cell_size=30, *start_pos):
+    def __init__(self, width=100, height=100, start_pos=list(), cell_size=30, top=None, left=None, bottom=None, right=None):
         self.width = width
         self.height = height
         self.cell_size = cell_size
@@ -249,6 +249,7 @@ class Board:
         self.bottom = self.top
         self.left = 10
         self.right = self.left
+        self.set_view(top, left, bottom, right, cell_size)
         self.start_pos = start_pos
         self.show_grid = True
         name = map(lambda x: (x, settings['players_control'][x]), settings['players'])
@@ -259,11 +260,12 @@ class Board:
     def set_board(self, board):
         self.board = board
 
-    def edit_padding(self, top=None, left=None, bottom=None, right=None):
+    def set_view(self, top=None, left=None, bottom=None, right=None, cell_size=None):
         self.top = top if top is not None else self.top
         self.left = left if left is not None else self.left
         self.bottom = bottom if bottom is not None else self.bottom
         self.right = right if right is not None else self.right
+        self.cell_size = cell_size if cell_size is not None else self.cell_size
 
     @property
     def get_size(self):
@@ -287,11 +289,6 @@ class Board:
 
     def __iter__(self):
         return self.flat
-
-    def set_view(self, left=None, top=None, cell_size=None):
-        self.left = left if left is not None else self.left
-        self.top = top if top is not None else self.top
-        self.cell_size = cell_size if cell_size is not None else self.cell_size
 
     def render(self, surface):
         for x in range(self.width):

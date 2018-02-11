@@ -5,9 +5,7 @@ pygame.init()
 
 
 def create_board():
-    b = Board(40, 40, 15, (5, 5), (30, 30))
-    b.edit_padding(left=0, bottom=0, top=35, right=0)
-    return b
+    return Board(40, 40, [(5, 5), (30, 30)], 15, 35, 0, 0, 0)
 
 
 board = create_board()
