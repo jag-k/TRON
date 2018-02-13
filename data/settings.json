@@ -1,22 +1,38 @@
 {
-  "players": ["player1", "player2"],
-  "players_color": {
-    "default": "#006def",
-    "player1": "#00ff00",
-    "player2": "#00ffff"
-  },
-  "players_control": {
+  "players_name": [
+    "player1",
+    "player2"
+  ],
+  "players": {
+    "default": {
+      "name": null,
+      "color": "#006def",
+      "control": {
+        "273": "up",
+        "274": "down",
+        "276": "left",
+        "275": "right"
+      }
+    },
     "player1": {
-      "119": "up",
-      "115": "down",
-      "97": "left",
-      "100": "right"
+      "name": "player1",
+      "color": "#00ff00",
+      "control": {
+        "119": "up",
+        "115": "down",
+        "97": "left",
+        "100": "right"
+      }
     },
     "player2": {
-      "273": "up",
-      "274": "down",
-      "276": "left",
-      "275": "right"
+      "name": "player2",
+      "color": "#46b4a1",
+      "control": {
+        "273": "up",
+        "274": "down",
+        "276": "left",
+        "275": "right"
+      }
     }
   },
   "points_price": {

@@ -1,13 +1,14 @@
 import json
 from pprint import pprint
 import sys
-
+from GUI import *
 from model_converter import *
-import pygame
-
 import os
+from tkinter import colorchooser
 
+import pygame
 pygame.init()
+pygame.display.init()
 
 # CONSTANTS
 
@@ -117,6 +118,15 @@ def terminate():
     sys.exit()
 
 
+def create_board():
+    return Board(40, 40, [(5, 5), (30, 30)], 15, 35, 0, 0, 0)
+
+
+def palette(color=None, **option):
+    c = colorchooser.askcolor(color, **option)
+    return pygame.Color(c[1])
+
+
 class Store:
     def __init__(self, player):
         self.file = './data/store.json'
@@ -163,24 +173,30 @@ class EmptyCell:
 
 
 class Player(EmptyCell):
-    def __init__(self, x, y, direction, board, name, key_control):
+    def __init__(self, x, y, direction, board, name):
         super().__init__(x, y, board)
         self.start = self.startx, self.starty = x, y
         self.old_d = CENTER
         self.d = direction
         self.live = True
         self.name = name
-        self.control = key_control
+        self.control = settings['players'][name]['control']
         self.tracks = []
         self.step = True
         self.next_count = 0
         self.render_count = -1
         self.store = Store(self)
-        self.color = pygame.Color(settings['players_color'][name] if name in settings['players_color']
-                                  else settings['players_color']['default'])
+        self.color = pygame.Color(settings['players'][name]['color']
+                                  if name in settings['players_name'] else
+                                  settings['players_color']['default']['color'])
+        print("%s: %s" % (self.name, self.color))
 
     def __str__(self):
         return "P"
+
+    @property
+    def get_color(self):
+        return self.color
 
     def next(self):
         board = self.board.board
@@ -233,7 +249,7 @@ class Track(EmptyCell):
 
     def render(self, surface):
         m = models['tracks'][''.join(sorted([self.start_dir[0], self.end_dir[0]]))]
-        m.render(surface, self.board.rect(self.pos), self.player.color)
+        m.render(surface, self.board.rect(self.pos), self.player.get_color)
 
     def update(self, *args):
         if self.player not in self.board.flat:
@@ -252,10 +268,16 @@ class Board:
         self.set_view(top, left, bottom, right, cell_size)
         self.start_pos = start_pos
         self.show_grid = True
-        name = map(lambda x: (x, settings['players_control'][x]), settings['players'])
-        self.board = [[Player(x, y, RIGHT, self, *next(name)) if (x, y) in start_pos else EmptyCell(x, y, self)
-                       for y in range(height)]
-                      for x in range(width)]
+        player_index = 0
+        self.board = [[]]
+        for x in range(width):
+            for y in range(height):
+                if (x, y) in start_pos:
+                    self.board[-1].append(Player(x, y, RIGHT, self, settings['players_name'][player_index]))
+                    player_index += 1
+                else:
+                    self.board[-1].append(EmptyCell(x, y, self))
+            self.board.append([])
 
     def set_board(self, board):
         self.board = board
@@ -327,3 +349,6 @@ class Board:
             update = getattr(i, "update", None)
             if callable(update):
                 i.update(*args)
+
+
+create_board()
