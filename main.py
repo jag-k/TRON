@@ -28,8 +28,8 @@ paused = False
 fps = 60
 clock = pygame.time.Clock()
 bg = pygame.Color("gray45")
-pygame.display.set_icon(load_image('images/TRON_icon3.png'))
-pygame.display.set_caption("-TRON_")
+pygame.display.set_caption("TRON")
+pygame.display.set_icon(pygame.image.load('data/images/TRON_icon3.png'))
 
 
 def start_screen():
@@ -73,9 +73,6 @@ while running:
                 board = create_board()
             if event.key == pygame.K_ESCAPE:
                 terminate()
-            if event.key == pygame.K_f:
-                print("Fullscreen mode:", pygame.display.toggle_fullscreen())
-
         board.get_event(event)
 
     screen.fill(bg)

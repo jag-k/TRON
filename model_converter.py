@@ -9,18 +9,14 @@ SYMBOL_CODE = {".": None,
 
 
 class Model:
-    def __init__(self, model_name, color=None):
-        self.model = self.update(model_name, color)
+    def __init__(self, model_name):
+        self.model = self.update(model_name)
 
     def __repr__(self):
         return '<Model at "%s.model">' % self.model['name']
 
-    def render(self, surface, rect, color=None):
-        if self.model['image'] is None:
-            if color is None:
-                raise ValueError
-            self.model = self.update(self.model['name'], color)
-        image = pygame.transform.scale(self.model['image'], rect.size)
+    def render(self, surface, rect, color):
+        image = pygame.transform.scale(self.image(color, self.model), rect.size)
         surface.blit(image, rect)
     
     @staticmethod
@@ -46,7 +42,7 @@ class Model:
                     pygame.draw.line(image, Model.to_color(color), (y, x), (y, x))
         return image
     
-    def update(self, model_name, color=None):
+    def update(self, model_name):
         model = {"name": os.path.split(model_name)[-1].lower().rstrip('.model')}
         model["full_name"] = os.path.join('data', 'models', model["name"]+'.model')
         model['raw'] = [[y for y in x] for x in map(lambda x: x.strip(), open(model['full_name']).readlines())]
@@ -56,7 +52,7 @@ class Model:
                           for x in range(len(model['raw']))]
 
         model['size'] = model['x'], model['y'] = len(model['raw']), len(model['raw'][0])
-        model['image'] = self.image(color, model)
+        # model['image'] = self.image(color, model)
         return model
 
 

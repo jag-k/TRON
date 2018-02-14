@@ -6,7 +6,9 @@
   "players": {
     "default": {
       "name": null,
-      "color": "#006def",
+      "color": "#ff0000",
+      "direction": "right",
+      "start_pos": null,
       "control": {
         "273": "up",
         "274": "down",
@@ -17,6 +19,8 @@
     "player1": {
       "name": "player1",
       "color": "#00ff00",
+      "direction": "down",
+      "start_pos": [10, 10],
       "control": {
         "119": "up",
         "115": "down",
@@ -27,6 +31,8 @@
     "player2": {
       "name": "player2",
       "color": "#46b4a1",
+      "direction": "up",
+      "start_pos": [30, 30],
       "control": {
         "273": "up",
         "274": "down",
@@ -40,5 +46,6 @@
     "normal": 5,
     "easy": 1
   },
-  "line_size": 4
+  "line_size": 4,
+  "debug": true
 }

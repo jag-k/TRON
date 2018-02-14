@@ -1,10 +1,9 @@
 import json
-from pprint import pprint
 import sys
 from GUI import *
+from print_debug import print_debug, pprint_debug
 from model_converter import *
 import os
-from tkinter import colorchooser
 
 import pygame
 pygame.init()
@@ -64,8 +63,8 @@ REVERSE_DIRECTIONAL = {
 
 STORE_COEFFICIENT = 1
 
-# MODELS
 
+# MODELS
 
 models = {
     "players": dict(
@@ -81,7 +80,7 @@ models = {
     )
 }
 
-pprint(models)
+pprint_debug(models)
 
 # SETTINGS
 
@@ -114,17 +113,23 @@ def edit_pos(pos1, pos2):
 
 
 def terminate():
+    for i in all_boards:
+        i.delete()
     pygame.quit()
     sys.exit()
 
 
 def create_board():
-    return Board(40, 40, [(5, 5), (30, 30)], 15, 35, 0, 0, 0)
+    return Board(40, 40, ["player1", "player2"], 15, 35, 0, 0, 0)
 
 
-def palette(color=None, **option):
-    c = colorchooser.askcolor(color, **option)
-    return pygame.Color(c[1])
+try:
+    from tkinter import colorchooser
+
+    def palette(color=None, **option):
+        return pygame.Color(colorchooser.askcolor(color, **option)[1])
+except ImportError:
+    print("\x1b[31;1mPlease, install Tkinter (pip install python3-tk)\x1b[0m")
 
 
 class Store:
@@ -168,17 +173,16 @@ class EmptyCell:
     def pos(self):
         return self.x, self.y
 
-    def delete(self):
-        self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board)
+    def delete(self, full=False):
+        self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board) if not full else 0
 
 
 class Player(EmptyCell):
-    def __init__(self, x, y, direction, board, name):
+    def __init__(self, x, y, board, name):
         super().__init__(x, y, board)
         self.start = self.startx, self.starty = x, y
         self.old_d = CENTER
-        self.d = direction
-        self.live = True
+        self.d = settings['players'][name]['direction']
         self.name = name
         self.control = settings['players'][name]['control']
         self.tracks = []
@@ -189,7 +193,7 @@ class Player(EmptyCell):
         self.color = pygame.Color(settings['players'][name]['color']
                                   if name in settings['players_name'] else
                                   settings['players_color']['default']['color'])
-        print("%s: %s" % (self.name, self.color))
+        print_debug("%s: %s" % (self.name, self.color))
 
     def __str__(self):
         return "P"
@@ -205,8 +209,9 @@ class Player(EmptyCell):
 
             nextx, nexty = edit_pos(self.pos, CONVERT_DIRECTIONAL[self.d])
 
-            if nextx in range(self.board.width) and nexty in range(self.board.height) \
-                    and type(board[nextx][nexty]) is EmptyCell:
+            coords_bool = nextx in range(self.board.width) and nexty in range(self.board.height)
+
+            if coords_bool and type(board[nextx][nexty]) is EmptyCell:
                 track = Track(x, y, self.board, self, (self.d, REVERSE_DIRECTIONAL[self.old_d]))
                 board[self.x][self.y] = track
                 self.tracks.append(track)
@@ -216,10 +221,11 @@ class Player(EmptyCell):
                 self.x, self.y = nextx, nexty
                 board[self.x][self.y] = self
                 self.next_count += 1
-            else:
-                self.store.save_store()
+            elif coords_bool and type(board[nextx][nexty]) is Player:
+                board[nextx][nexty].delete()
                 self.delete()
-                print(self.store)
+            else:
+                self.delete()
             self.step = True
 
     def render(self, surface):
@@ -237,9 +243,17 @@ class Player(EmptyCell):
                 self.edit_dir(self.control[str(event.key)])
                 self.step = False
 
+    def delete(self, full=False):
+
+        self.store.save_store()
+        print_debug(self.store)
+        self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board)
+        if not full:
+            self.board.board[self.startx][self.starty] = Player(*self.start, self.board, self.name)
+
 
 class Track(EmptyCell):
-    def __init__(self, x, y, board, player=Player, dirs=(CENTER, UP)):
+    def __init__(self, x, y, board, player, dirs=(CENTER, UP)):
         super().__init__(x, y, board)
         self.player = player
         self.start_dir, self.end_dir = dirs
@@ -257,7 +271,9 @@ class Track(EmptyCell):
 
 
 class Board:
-    def __init__(self, width=100, height=100, start_pos=list(), cell_size=30, top=None, left=None, bottom=None, right=None):
+    def __init__(self, width=100, height=100, players_name=settings['players_name'], cell_size=30,
+                 top=None, left=None, bottom=None, right=None):
+        all_boards.append(self)
         self.width = width
         self.height = height
         self.cell_size = cell_size
@@ -266,14 +282,15 @@ class Board:
         self.left = 10
         self.right = self.left
         self.set_view(top, left, bottom, right, cell_size)
-        self.start_pos = start_pos
+        self.players_name = players_name
+        start_pos = [tuple(settings["players"][i]["start_pos"]) for i in players_name]
         self.show_grid = True
         player_index = 0
         self.board = [[]]
         for x in range(width):
             for y in range(height):
                 if (x, y) in start_pos:
-                    self.board[-1].append(Player(x, y, RIGHT, self, settings['players_name'][player_index]))
+                    self.board[-1].append(Player(x, y, self, settings['players_name'][player_index]))
                     player_index += 1
                 else:
                     self.board[-1].append(EmptyCell(x, y, self))
@@ -350,5 +367,11 @@ class Board:
             if callable(update):
                 i.update(*args)
 
+    def delete(self):
+        for i in self.flat:
+            i.delete(True)
 
-create_board()
+
+all_boards = []
+if __name__ == '__main__':
+    create_board()
