@@ -6,7 +6,7 @@ screen = pygame.display.set_mode((400, 400))
 
 
 def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
+    fullname = join('data', name)
     try:
         image = pygame.image.load(fullname)
     except pygame.error as message:
@@ -27,38 +27,13 @@ running = True
 paused = False
 fps = 60
 clock = pygame.time.Clock()
-bg = pygame.Color("gray45")
-pygame.display.set_caption("TRON")
-pygame.display.set_icon(pygame.image.load('data/images/TRON_icon3.png'))
+bg = pygame.Color(settings['textures']['game']['color_bg'])
+pygame.display.set_caption(settings['textures']['window']['title'])
+pygame.display.set_icon(pygame.image.load(join('data', 'images', settings['textures']['window']['icon'])))
 
-
-def start_screen():
-    intro_text = ["НАЗВАНИЕ ИГРЫ", "", "Правила игры:", "Если в правилах несколько строк,",
-                  "приходится выводить построчно"]
-    screen.fill(pygame.Color("darkgreen"))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color("white"))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
-                return
-        pygame.display.flip()
-        clock.tick(fps)
-
-
-start_screen()
+start_screen(screen, clock)
 screen = pygame.display.set_mode(size)
+right_data = RightData(pygame.Rect((screen.get_width()-200, 0), (200, screen.get_height())), board, "gray35")
 pygame.time.set_timer(25, 180)
 while running:
     for event in pygame.event.get():
@@ -68,16 +43,22 @@ while running:
             board.next_step()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                paused = not paused
+                if not paused_screen(screen, clock):
+                    terminate()
             if event.key == pygame.K_r:
                 board = create_board()
             if event.key == pygame.K_ESCAPE:
                 terminate()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
+                board.show_grid()
         board.get_event(event)
+        music_volume_event(event)
 
-    screen.fill(bg)
-    board.render(screen)
-    board.update()
+    if not paused:
+        screen.fill(bg)
+        board.render(screen)
+        board.update()
+        right_data.render(screen)
     pygame.display.flip()
 
 terminate()

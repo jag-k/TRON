@@ -80,10 +80,8 @@ if select('Select', 'edit', 'create')[0] == 'edit':
 else:
     model_name = None
     size = int(input("Enter the size model (NxN): "))
-    if not size % 2:
-        size += 1
 
-board = Board(size, size, 15)
+board = Board(size, size, 10)
 if model_name is not None:
     board.board = list(np.transpose(np.array(model)))
 size = width, height = board.get_size
@@ -113,7 +111,8 @@ while running:
     board.render()
     pygame.display.flip()
 
-raw = '\n'.join(''.join(str(j) for j in i) for i in np.transpose(np.array(board.board)))
+raw = '\n'.join(''.join(str(j) for j in i)
+                for i in np.transpose(np.array(board.board))).replace('0', '□').replace('1', '■')
 pygame.quit()
 
 

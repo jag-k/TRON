@@ -35,7 +35,7 @@ class GUI:
                 if i.focus:
                     self.active_tb = self.textbox_list.index(i)
 
-        if self.check:
+        if self.check and self.textbox_list:
             for i in self.textbox_list:
                 i.focus = False
             self.textbox_list[self.active_tb].focus = True
@@ -153,6 +153,9 @@ class Button(Label):
         self.active_color = active_color
         self.color = self.bg_color
         self.pressed = False
+
+    def __bool__(self):
+        return bool(self.pressed)
 
     def render(self, surface):
         surface.fill(self.color, self.Rect)
