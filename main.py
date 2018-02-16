@@ -31,10 +31,13 @@ bg = pygame.Color(settings['textures']['game']['color_bg'])
 pygame.display.set_caption(settings['textures']['window']['title'])
 pygame.display.set_icon(pygame.image.load(join('data', 'images', settings['textures']['window']['icon'])))
 
+init_music()
+
 start_screen(screen, clock)
 screen = pygame.display.set_mode(size)
 right_data = RightData(pygame.Rect((screen.get_width()-200, 0), (200, screen.get_height())), board, "gray35")
-pygame.time.set_timer(25, 180)
+pygame.time.set_timer(25, settings['difficulty'][game_difficulty]['game_speed'])
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -42,13 +45,13 @@ while running:
         if event.type == 25 and not paused:
             board.next_step()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE:
+            if event.key == pygame.K_ESCAPE:
                 if not paused_screen(screen, clock):
                     terminate()
             if event.key == pygame.K_r:
                 board = create_board()
-            if event.key == pygame.K_ESCAPE:
-                terminate()
+            if event.key == pygame.K_SPACE and settings['debug']:
+                paused = not paused
             if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
                 board.show_grid()
         board.get_event(event)

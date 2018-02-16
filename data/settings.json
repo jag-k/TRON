@@ -41,14 +41,44 @@
       }
     }
   },
-  "points_price": {
-    "hard": 10,
-    "normal": 5,
-    "easy": 1
+  "difficulty": {
+    "hard": {
+      "point_price": 10,
+      "game_speed": 50
+    },
+    "normal": {
+      "point_price": 10,
+      "game_speed": 150
+    },
+    "easy": {
+      "point_price": 1,
+      "game_speed": 300
+    }
   },
   "line_size": 4,
   "debug": true,
   "textures": {
+    "countdown": {
+      "values": [
+        {
+          "text": 3,
+          "color": "white"
+        },
+        {
+          "text": 2,
+          "color": "white"
+        },
+        {
+          "text": 1,
+          "color": "white"
+        },
+        {
+          "text": "GO!",
+          "color": "white"
+        }
+      ],
+      "time": 100
+    },
     "window": {
       "title": "TRON",
       "icon": "TRON_icon3.png"
@@ -71,9 +101,10 @@
     }
   },
   "music": {
-    "play": false,
+    "play": true,
     "file": "main.mp3",
     "loops": -1,
+    "smooth": 150,
     "max_volume": 12,
     "min_volume": 1,
     "start": 0.0

@@ -55,9 +55,10 @@ class GUI:
 
 
 class Label:
-    def __init__(self, rect, text, text_color='gray', bg_color=-1):
+    def __init__(self, rect, text, text_color='gray', bg_color=-1, text_position='left'):
         self.Rect = pygame.Rect(rect)
         self.text = text
+        self.text_pos = text_position
         self.font_color = pygame.Color(text_color)
         self.bg_color = None if bg_color == -1 else \
             (bg_color if type(bg_color) is pygame.Color else pygame.Color(bg_color))
@@ -70,6 +71,8 @@ class Label:
             surface.fill(self.bg_color, self.Rect)
         self.rendered_text = self.font.render(self.text, 1, self.font_color)
         self.rendered_rect = self.rendered_text.get_rect(x=self.Rect.x + 2, centery=self.Rect.centery)
+        if self.text_pos == 'center':
+            self.rendered_rect.centerx = self.Rect.centerx
         surface.blit(self.rendered_text, self.rendered_rect)
 
 

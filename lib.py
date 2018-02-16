@@ -86,7 +86,7 @@ STORE_COEFFICIENT = 1
 pygame.display.set_mode((1, 1))
 raw_logo = pygame.image.load(os.path.join('data', 'images', settings['textures']['logo'])).convert_alpha()
 pygame.display.quit()
-LOGO_IMAGE: pygame.Surface = pygame.transform.scale(raw_logo, (raw_logo.get_width()*3, raw_logo.get_height()*3))
+LOGO_IMAGE = pygame.transform.scale(raw_logo, (raw_logo.get_width()*3, raw_logo.get_height()*3))
 
 all_boards = []
 music = pygame.mixer.music
@@ -113,6 +113,7 @@ pprint_debug(models)
 
 # METHODS
 
+
 def edit_pos(pos1, pos2):
     x1, y1 = pos1
     x2, y2 = pos2
@@ -129,13 +130,16 @@ def terminate():
 def init_music():
     if settings['music']['play']:
         music.load(join('data', 'music', settings['music']['file']))
-    music.play(settings['music']['loops'], settings['music']['start'])
-    music.set_volume(0.0)
-    pygame.time.set_timer(26, 350)
+        music.play(settings['music']['loops'], settings['music']['start'])
+        music.set_volume(0.0)
+        music.pause()
+        pygame.time.set_timer(26, settings['music']['smooth'])
 
 
 def music_volume_event(event, coef=0.01):
-    if event.type == 26 and int(music.get_volume() * 100) < settings['music']['max_volume'] + 1:
+    music.unpause()
+    if event.type == 26 and ((int(music.get_volume() * 100) < settings['music']['max_volume'] + 1) if coef > 0
+                             else (int(music.get_volume() * 100) > settings['music']['min_volume'])):
         volume = music.get_volume()
         music.set_volume(volume + coef)
         print_debug("Volume: %d" % (volume * 100))
@@ -261,7 +265,7 @@ class Player(EmptyCell):
                 board[self.x][self.y] = track
                 self.tracks.append(track)
                 self.edit_dir(self.d)
-                self.store.add_points(settings['points_price'][game_difficulty])
+                self.store.add_points(settings['difficulty'][game_difficulty]['point_price'])
 
                 self.x, self.y = nextx, nexty
                 board[self.x][self.y] = self
@@ -294,7 +298,7 @@ class Player(EmptyCell):
         print_debug(self.store)
         self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board)
         if not full:
-            self.board.board[self.startx][self.starty] = Player(*self.start, self.board, self.name)
+            self.board.board[self.startx][self.starty] = Player(self.start[0], self.start[1], self.board, self.name)
 
 
 class Track(EmptyCell):
@@ -400,6 +404,7 @@ class Board:
                 render = getattr(self.board[x][y], "render", None)
                 if callable(render):
                     self.board[x][y].render(surface)
+
                 if self.grid:
                     pygame.draw.rect(surface, self.grid_color, self.rect(x, y), 1)
                 if self.border:
@@ -434,15 +439,16 @@ class Board:
 
 class Data:
     def __init__(self, rect, board, color):
-        self.rect: pygame.Rect = rect
-        self.board: Board = board
+        self.rect = rect
+        self.board = board
         self.color = to_color(color)
         self.font_size = 32
         self.font = pygame.font.Font(None, self.font_size)
 
     def text(self, text, color, surface, pos=0):
         rendered_text = self.font.render(text, 1, color)
-        rendered_rect = rendered_text.get_rect(y=self.rect.y + 20 + pos * self.font_size // 1.5, centerx=self.rect.centerx)
+        rendered_rect = rendered_text.get_rect(y=self.rect.y + 20 + pos * self.font_size // 1.5,
+                                               centerx=self.rect.centerx)
         surface.blit(rendered_text, rendered_rect)
 
     def render_bg(self, surface):
@@ -452,6 +458,7 @@ class Data:
 class RightData(Data):
     def render(self, surface):
         self.render_bg(surface)
+
         store = [{"name": i.name, "store": i.get_store, "color": i.color} for i in self.board.get_players]
         store.sort(key=lambda x: (int(x['store']), x['store'].get_hs), reverse=True)
         hs = [{"name": i['name'], "store": i['store'].get_hs, "color": i['color']} for i in store]
@@ -459,8 +466,9 @@ class RightData(Data):
         hs = list(sorted(hs, key=lambda x: (int(x['store']), x['name']), reverse=True))
         res = ['Total Store:'] + store + ['', '', '', 'High Store:'] + hs
         for i in range(len(res)):
-            self.text(*(("%s: %d" % (res[i]['name'], int(res[i]['store'])), res[i]['color'])
-                        if type(res[i]) is dict else (res[i], to_color("white"))), surface, i)
+            data = ("%s: %d" % (res[i]['name'], int(res[i]['store'])), res[i]['color']) \
+                if type(res[i]) is dict else (res[i], to_color("white"))
+            self.text(data[0], data[1], surface, i)
 
 # INTERFACE
 
@@ -492,41 +500,59 @@ def start_screen(surface, clock):
         clock.tick(settings['FPS'])
 
 
-def paused_screen(surface: pygame.Surface, clock: pygame.time.Clock()):
+def paused_screen(surface, clock):
     screen = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-    screen.fill(pygame.Color(0, 0, 0, 150))
-    rect: pygame.Rect = surface.get_rect()
-    logo: pygame.Surface = LOGO_IMAGE
-    logo_center = rect.centerx, rect.centery // 3
-    logo_rect: pygame.Rect = logo.get_rect()
-    logo_rect.center = logo_center
-    screen.blit(logo, logo_rect)
+    old_surface = surface.copy()
+    font = pygame.font.Font(None, screen.get_height() // 4 + screen.get_height())
+
+    def countdown(res=True):
+        screen = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+
+        for i in settings['textures']['countdown']['values']:
+            t = font.render(str(i['text']), 1, to_color(i['color']))
+            screen.fill((0, 0, 0, 150))
+            r = t.get_rect(center=old_surface.get_rect().center)
+            screen.blit(t, r)
+            old_surface.blit(screen, surface.get_size())
+            surface.blit(old_surface, surface.get_size())
+            pygame.display.flip()
+            pygame.time.wait(settings['textures']['countdown']['time'])
+        return res
+
+    screen.fill((0, 0, 0, 150))
+    rect = surface.get_rect()
+
+    pause_rect = LOGO_IMAGE.get_rect()
+    pause_rect.center = rect.centerx, rect.centery // 3
+
     surface.blit(screen, rect)
+
     ok_rect = pygame.Rect(0, 0, 300, 40)
     ex_rect = pygame.Rect(0, 0, 300, 40)
+
     ok_rect.centerx, ok_rect.centery = rect.centerx, rect.centery + rect.centery // 4
     ex_rect.centerx, ex_rect.centery = rect.centerx, rect.centery + rect.centery // 4 * 2
+
     ok = Button(ok_rect, "Продолжить", bg_color=pygame.Color("green"), active_color=pygame.Color("lightgreen"))
     ex = Button(ex_rect, "Выйти", bg_color=pygame.Color("red"), active_color=pygame.Color("#ff5c77"))
-    label_rect = logo_rect.copy()
-    label_rect.center = rect.center
-    gui = GUI(Label(label_rect, "ПАУЗА", "white"),
-              ok, ex)
+
+    gui = GUI(Label(pause_rect, "ПАУЗА", "white", text_position='center'), ok, ex)
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN and pygame.key == pygame.K_SPACE:
-                return True
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                return countdown()
             music_volume_event(event, -0.01)
             gui.get_event(event)
 
         gui.render(surface)
         gui.update()
         if ok:
-            return True
+            return countdown()
         elif ex:
             return False
+        clock.tick(settings['FPS'])
         pygame.display.flip()
 
 
