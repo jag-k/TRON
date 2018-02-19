@@ -17,8 +17,8 @@
       }
     },
     "player1": {
-      "name": "player1",
-      "color": "#00ff00",
+      "name": "Jag_k",
+      "color": "darkblue",
       "direction": "down",
       "start_pos": [10, 10],
       "control": {
@@ -29,8 +29,8 @@
       }
     },
     "player2": {
-      "name": "player2",
-      "color": "#46b4a1",
+      "name": null,
+      "color": "lightblue",
       "direction": "up",
       "start_pos": [20, 20],
       "control": {
@@ -41,18 +41,26 @@
       }
     }
   },
-  "difficulty": {
+  "difficult": {
+    "impossible": {
+      "point_price": 20,
+      "game_speed": 150,
+      "color": "red"
+    },
     "hard": {
       "point_price": 10,
-      "game_speed": 50
+      "game_speed": 50,
+      "color": "orange"
     },
     "normal": {
-      "point_price": 10,
-      "game_speed": 150
+      "point_price": 5,
+      "game_speed": 150,
+      "color": "yellow"
     },
     "easy": {
       "point_price": 1,
-      "game_speed": 300
+      "game_speed": 300,
+      "color": "lightgreen"
     }
   },
   "line_size": 4,
@@ -77,7 +85,7 @@
           "color": "white"
         }
       ],
-      "time": 100
+      "time": 500
     },
     "window": {
       "title": "TRON",
@@ -105,7 +113,7 @@
     "file": "main.mp3",
     "loops": -1,
     "smooth": 150,
-    "max_volume": 12,
+    "max_volume": 50,
     "min_volume": 1,
     "start": 0.0
   },

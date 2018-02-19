@@ -5,12 +5,14 @@ from print_debug import print_debug, pprint_debug
 from model_converter import *
 import os
 import pygame
+import time
+from pygame.color import THECOLORS
 pygame.init()
 
 
 # SETTINGS
 
-game_difficulty = 'normal'
+game_difficult = 'normal'
 
 
 settings = {}
@@ -127,6 +129,11 @@ def terminate():
     sys.exit()
 
 
+def exit_event(event):
+    if event.type == pygame.QUIT:
+        terminate()
+
+
 def init_music():
     if settings['music']['play']:
         music.load(join('data', 'music', settings['music']['file']))
@@ -143,6 +150,14 @@ def music_volume_event(event, coef=0.01):
         volume = music.get_volume()
         music.set_volume(volume + coef)
         print_debug("Volume: %d" % (volume * 100))
+
+
+def get_screenshot(surface):
+    if not os.path.isdir('data/screenshots'):
+        os.mkdir('data/screenshots')
+    filename = time.strftime("data/screenshots/Screenshot %d.%m.%Y %H:%M:%S.png")
+    pygame.image.save(surface, filename)
+    print("Screenshot \"%s\" was been created" % (os.path.split(filename)[-1]))
 
 
 def create_board():
@@ -229,6 +244,7 @@ class Player(EmptyCell):
         self.old_d = CENTER
         self.d = settings['players'][name]['direction']
         self.name = name
+        self.display_name = settings['players'][name]['name'] if settings['players'][name]['name'] else name
         self.control = settings['players'][name]['control']
         self.tracks = []
         self.step = True
@@ -265,7 +281,7 @@ class Player(EmptyCell):
                 board[self.x][self.y] = track
                 self.tracks.append(track)
                 self.edit_dir(self.d)
-                self.store.add_points(settings['difficulty'][game_difficulty]['point_price'])
+                self.store.add_points(settings['difficult'][game_difficult]['point_price'])
 
                 self.x, self.y = nextx, nexty
                 board[self.x][self.y] = self
@@ -311,8 +327,9 @@ class Track(EmptyCell):
         return "T"
 
     def render(self, surface):
-        m = models['tracks'][''.join(sorted([self.start_dir[0], self.end_dir[0]]))]
-        m.render(surface, self.board.rect(self.pos), self.player.get_color)
+        if game_difficult != 'impossible':
+            m = models['tracks'][''.join(sorted([self.start_dir[0], self.end_dir[0]]))]
+            m.render(surface, self.board.rect(self.pos), self.player.get_color)
 
     def update(self, *args):
         if self.player not in self.board.flat:
@@ -459,67 +476,108 @@ class RightData(Data):
     def render(self, surface):
         self.render_bg(surface)
 
-        store = [{"name": i.name, "store": i.get_store, "color": i.color} for i in self.board.get_players]
-        store.sort(key=lambda x: (int(x['store']), x['store'].get_hs), reverse=True)
-        hs = [{"name": i['name'], "store": i['store'].get_hs, "color": i['color']} for i in store]
+        store = [{"text": "%s: %d" % (i.display_name, i.get_store), "color": i.color, "player": i} for i in self.board.get_players]
+        store.sort(key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True)
+        hs = [{"text": "%s: %d" % (i['player'].display_name, i['player'].store.get_hs), "color": i['color']} for i in store]
 
-        hs = list(sorted(hs, key=lambda x: (int(x['store']), x['name']), reverse=True))
-        res = ['Total Store:'] + store + ['', '', '', 'High Store:'] + hs
+        hs = list(sorted(hs, key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True))
+        res = ["Mode:", {"text": game_difficult, "color": to_color(settings['difficult'][game_difficult]['color'])},
+               '', '', 'Total Store:'] + store + ['', '', 'High Store:'] + hs
         for i in range(len(res)):
-            data = ("%s: %d" % (res[i]['name'], int(res[i]['store'])), res[i]['color']) \
-                if type(res[i]) is dict else (res[i], to_color("white"))
+            data = (res[i]['text'], res[i]['color']) if type(res[i]) is dict else (res[i], to_color("white"))
             self.text(data[0], data[1], surface, i)
 
 # INTERFACE
 
 
-def start_screen(surface, clock):
-    intro_text = ["НАЗВАНИЕ ИГРЫ", "", "Правила игры:", "Если в правилах несколько строк,",
-                  "приходится выводить построчно"]
-    surface.fill(pygame.Color("darkgreen"))
-    font = pygame.font.Font(None, 30)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color("white"))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = 10
-        text_coord += intro_rect.height
-        surface.blit(string_rendered, intro_rect)
+def rule_page():
+    pass
+
+
+def start_screen(clock, old_size):
+    bg = pygame.image.load('data/images/tron-ssh-animated.gif').convert_alpha()
+    surface: pygame.Surface = pygame.display.set_mode(bg.get_size())
+    rect: pygame.Rect = surface.get_rect()
+    blank = pygame.Surface(bg.get_size(), pygame.SRCALPHA)
+    blank.fill((0, 0, 0, 150))
+    bg.blit(blank, bg.get_rect())
+    surface.blit(bg, bg.get_rect())
+    logo_rect: pygame.Rect = LOGO_IMAGE.get_rect()
+    logo_rect.center = surface.get_width() // 2, surface.get_height() // 5
+    bg_color = to_color('steelblue')
+    active_color = to_color('steelblue1')
+
+    settings_rect = pygame.Rect(0, 0, surface.get_width() // 5, surface.get_height() // 10)
+    settings_rect.center = rect.centerx // 4 + rect.centerx - rect.centerx // 2, \
+                           rect.centery // 5 + rect.centery + rect.centery // 4
+
+    play_rect = pygame.Rect(0, 0, surface.get_width() // 5, surface.get_height() // 10)
+    play_rect.center = rect.centerx // 4 + rect.centerx - rect.centerx // 2, \
+                       rect.centery // 5 + rect.centery
+
+    exit_rect = pygame.Rect(0, 0, surface.get_width() // 5, surface.get_height() // 10)
+    exit_rect.center = rect.centerx // 4 + rect.centerx, \
+                       rect.centery // 5 + rect.centery + rect.centery // 4
+
+    rule_rect = pygame.Rect(0, 0, surface.get_width() // 5, surface.get_height() // 10)
+    rule_rect.center = rect.centerx // 4 + rect.centerx, \
+                       rect.centery // 5 + rect.centery
+
+    settings_b = Button(settings_rect, "Настройки", 'white', bg_color, active_color, False)
+    play_b = Button(play_rect, "Играть", 'white', bg_color, active_color)
+    exit_b = Button(exit_rect, "Выйти", 'white', bg_color, active_color)
+    rule_b = Button(rule_rect, "Правила", 'white', bg_color, active_color)
+    gui = GUI(settings_b, play_b, exit_b, rule_b)
 
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            elif event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
-                return
+            exit_event(event)
             music_volume_event(event)
+            gui.get_event(event)
+        surface.blit(bg, bg.get_rect())
+        surface.blit(LOGO_IMAGE, logo_rect)
+        gui.update()
+        gui.render(surface)
+        if exit_b:
+            terminate()
+        if play_b:
+            pygame.display.set_mode(old_size)
+            return None
+        if rule_b:
+            return rule_page()
 
         pygame.display.flip()
         clock.tick(settings['FPS'])
 
 
+def countdown(old_surface, surface, pos=0):
+    print_debug("Cointdown:", pos, len(settings['textures']['countdown']['values']))
+    if pos > len(settings['textures']['countdown']['values']):
+        return True
+    font = pygame.font.Font(None, surface.get_height() // 3)
+    val = settings['textures']['countdown']['values'][pos-1] if pos else {"text": '', "color": 'white'}
+
+    pygame.event.get()
+
+    t = font.render(str(val['text']),
+                    1, to_color(val['color']))
+    r = t.get_rect(center=surface.get_rect().center)
+    surface.blit(old_surface, surface.get_size())
+    surface.blit(t, r)
+    print_debug('"%s"' % val)
+    pygame.display.flip()
+    if pos:
+        pygame.time.wait(settings['textures']['countdown']['time'])
+    surface.blit(old_surface, surface.get_rect())
+    pygame.display.flip()
+    return countdown(old_surface, surface, pos+1)
+
+
 def paused_screen(surface, clock):
     screen = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-    old_surface = surface.copy()
-    font = pygame.font.Font(None, screen.get_height() // 4 + screen.get_height())
-
-    def countdown(res=True):
-        screen = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-
-        for i in settings['textures']['countdown']['values']:
-            t = font.render(str(i['text']), 1, to_color(i['color']))
-            screen.fill((0, 0, 0, 150))
-            r = t.get_rect(center=old_surface.get_rect().center)
-            screen.blit(t, r)
-            old_surface.blit(screen, surface.get_size())
-            surface.blit(old_surface, surface.get_size())
-            pygame.display.flip()
-            pygame.time.wait(settings['textures']['countdown']['time'])
-        return res
-
     screen.fill((0, 0, 0, 150))
+    old_surface = surface.copy()
+    old_surface.blit(screen, screen.get_rect())
     rect = surface.get_rect()
 
     pause_rect = LOGO_IMAGE.get_rect()
@@ -542,14 +600,14 @@ def paused_screen(surface, clock):
             if event.type == pygame.QUIT:
                 terminate()
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                return countdown()
+                return countdown(old_surface, surface)
             music_volume_event(event, -0.01)
             gui.get_event(event)
 
         gui.render(surface)
         gui.update()
         if ok:
-            return countdown()
+            return countdown(old_surface, surface)
         elif ex:
             return False
         clock.tick(settings['FPS'])

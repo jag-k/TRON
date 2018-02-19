@@ -151,14 +151,19 @@ class TextBox(Label):
 
 class Button(Label):
     def __init__(self, rect, text, text_color='gray', bg_color=pygame.Color('blue'),
-                 active_color=pygame.Color("lightblue")):
+                 active_color=pygame.Color("lightblue"), active=True):
         super().__init__(rect, text, text_color, bg_color)
         self.active_color = active_color
         self.color = self.bg_color
         self.pressed = False
+        self.active = active
+        self.button_up = False
 
     def __bool__(self):
-        return bool(self.pressed)
+        if self.button_up and self.active:
+            self.button_up = False
+            return True
+        return False
 
     def render(self, surface):
         surface.fill(self.color, self.Rect)
@@ -170,15 +175,16 @@ class Button(Label):
                 break
         self.rendered_text = self.font.render(text, 1, self.font_color)
 
-        if not self.pressed:
-            color1 = pygame.Color("white")
-            color2 = pygame.Color("black")
-            self.rendered_rect = self.rendered_text.get_rect(centerx=self.Rect.centerx + 3, centery=self.Rect.centery)
-        else:
+        if self.pressed and self.active:
             color1 = pygame.Color("black")
             color2 = pygame.Color("white")
-            self.rendered_rect = self.rendered_text.get_rect(centerx=self.Rect.centerx + 4, centery=self.Rect.centery + 2)
-
+            self.rendered_rect = self.rendered_text.get_rect(centerx=self.Rect.centerx + 4,
+                                                             centery=self.Rect.centery + 2)
+        else:
+            color1 = pygame.Color("white")
+            color2 = pygame.Color("black")
+            self.rendered_rect = self.rendered_text.get_rect(centerx=self.Rect.centerx + 3,
+                                                             centery=self.Rect.centery)
         # рисуем границу
         pygame.draw.rect(surface, color1, self.Rect, 2)
         pygame.draw.line(surface, color2, (self.Rect.right - 1, self.Rect.top),
@@ -192,8 +198,9 @@ class Button(Label):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.pressed = self.Rect.collidepoint(*event.pos)
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.button_up = self.pressed
             self.pressed = False
-        if event.type == pygame.MOUSEMOTION:
+        if event.type == pygame.MOUSEMOTION and self.active:
             self.color = self.active_color if self.Rect.collidepoint(*event.pos) else self.bg_color
 
 

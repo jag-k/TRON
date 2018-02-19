@@ -2,7 +2,6 @@ from lib import *
 
 import pygame
 pygame.init()
-screen = pygame.display.set_mode((400, 400))
 
 
 def load_image(name, colorkey=None):
@@ -33,10 +32,10 @@ pygame.display.set_icon(pygame.image.load(join('data', 'images', settings['textu
 
 init_music()
 
-start_screen(screen, clock)
 screen = pygame.display.set_mode(size)
+start_screen(clock, size)
 right_data = RightData(pygame.Rect((screen.get_width()-200, 0), (200, screen.get_height())), board, "gray35")
-pygame.time.set_timer(25, settings['difficulty'][game_difficulty]['game_speed'])
+pygame.time.set_timer(25, settings['difficult'][game_difficult]['game_speed'])
 
 while running:
     for event in pygame.event.get():
@@ -45,6 +44,8 @@ while running:
         if event.type == 25 and not paused:
             board.next_step()
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_p:
+                get_screenshot(screen)
             if event.key == pygame.K_ESCAPE:
                 if not paused_screen(screen, clock):
                     terminate()
@@ -52,7 +53,7 @@ while running:
                 board = create_board()
             if event.key == pygame.K_SPACE and settings['debug']:
                 paused = not paused
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_h:
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_h and settings['debug']:
                 board.show_grid()
         board.get_event(event)
         music_volume_event(event)
