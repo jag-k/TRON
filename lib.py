@@ -490,8 +490,66 @@ class RightData(Data):
 # INTERFACE
 
 
-def rule_page():
-    pass
+def rule_page(clock, old_size):
+    bg = pygame.image.load('data/images/tron-ssh-animated.gif').convert_alpha()
+    surface: pygame.Surface = pygame.display.set_mode(bg.get_size())
+    rect: pygame.Rect = surface.get_rect()
+    blank = pygame.Surface(bg.get_size(), pygame.SRCALPHA)
+    blank.fill((0, 0, 0, 150))
+    bg.blit(blank, bg.get_rect())
+    surface.blit(bg, bg.get_rect())
+    intro_text = ['ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "1",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "2",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "3",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "4",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "5",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "6",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "7",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "8",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "9",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "10",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}, "11",
+                  'ПРАВИЛА ИГРЫ', "Всё очень просто", {'text': "даже слишком", "color": "green"}
+                  ]
+
+    font = pygame.font.Font(None, 30)
+    text_coord = 30
+    text_size = sum(font.render(line['text'] if type(line) is dict else line, 1, to_color("white")).get_rect().h + 10
+                    for line in intro_text) + text_coord
+    text = pygame.Surface((surface.get_width(), text_size), pygame.SRCALPHA)
+    text.fill((0, 0, 0, 0))
+    for line in intro_text:
+        if type(line) is dict:
+            string_rendered = font.render(line['text'], 1, to_color(line['color']))
+        else:
+            string_rendered = font.render(line, 1, pygame.Color("white"))
+
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        text.blit(string_rendered, intro_rect)
+    text_rect = text.get_rect()
+    scroll = None if text_size <= surface.get_height() else 0
+    while True:
+        for event in pygame.event.get():
+            exit_event(event)
+            music_volume_event(event)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if scroll is not None and event.button in (4, 5):
+                    shift = int(1 if event.button % 2 else -1) * 10
+                    scroll += shift if (scroll + shift) in range(0, text_size - surface.get_height() + 10) else 0
+                elif event.button not in (4, 5):
+                    return start_screen(clock, old_size)
+            if event.type == pygame.KEYDOWN:
+                return start_screen(clock, old_size)
+        if scroll is not None:
+            text_rect.y = -scroll
+        surface.blit(bg, surface.get_rect())
+        surface.blit(text, text_rect)
+        text_rect.y = 0
+        pygame.display.flip()
 
 
 def start_screen(clock, old_size):
@@ -544,7 +602,7 @@ def start_screen(clock, old_size):
             pygame.display.set_mode(old_size)
             return None
         if rule_b:
-            return rule_page()
+            return rule_page(clock, old_size)
 
         pygame.display.flip()
         clock.tick(settings['FPS'])

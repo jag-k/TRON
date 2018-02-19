@@ -21,4 +21,4 @@ for i in ['up', 'down', 'right', 'left']:
                 print(event.unicode if event.unicode.isprintable() else ("[key:%d]" % event.key))
 print(control)
 settings['players'][player]['control'] = control
-json.dump(settings, open("settings.json", "w"), indent=2)
+json.dump(settings, open("data/settings.json", "w"), indent=2)
