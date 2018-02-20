@@ -85,7 +85,7 @@ class GIFImage(object):
                 else:
                     palette = base_palette
 
-                pi = pygame.image.fromstring(image.tostring(), image.size, image.mode)
+                pi = pygame.image.fromstring(image.tobytes(), image.size, image.mode)
                 pi.set_palette(palette)
                 if "transparency" in image.info:
                     pi.set_colorkey(image.info["transparency"])
@@ -176,7 +176,7 @@ class GIFImage(object):
 
 if __name__ == '__main__':
     pygame.init()
-    screen = pygame.display.set_mode((640, 480))
+    screen = pygame.display.set_mode((740, 580))
     tron = GIFImage("data/images/tron-ssh-animated.gif")
 
     while True:
@@ -184,6 +184,6 @@ if __name__ == '__main__':
             if event.type == QUIT:
                 pygame.quit()
 
-        screen.fill((255, 255, 255))
+        # screen.fill((255, 255, 255))
         tron.render(screen, (0, 0))
         pygame.display.flip()

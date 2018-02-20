@@ -6,6 +6,7 @@ from model_converter import *
 import os
 import pygame
 import time
+from GIFImage import GIFImage
 # from pygame.color import THECOLORS
 pygame.init()
 
@@ -105,12 +106,16 @@ def load_image(name, colorkey=None):
 
 
 raw_logo = load_image(os.path.join('images', settings['textures']['logo']))
+tron_gif = GIFImage('data/images/tron-ssh-animated.gif')
+tron_gif.pause()
 pygame.display.quit()
 LOGO_IMAGE = pygame.transform.scale(raw_logo, (raw_logo.get_width()*3, raw_logo.get_height()*3))
 
 all_boards = []
 music = pygame.mixer.music
 join = os.path.join
+BG = pygame.Surface(tron_gif.get_size())
+tron_gif.render(BG, (0, 0))
 
 
 # MODELS
@@ -240,12 +245,6 @@ class EmptyCell:
     def __init__(self, x, y, board):
         self.x, self.y = x, y
         self.board = board
-
-    def __repr__(self):
-        return "%s%s" % (type(self).__name__[0], self.pos)
-
-    def __str__(self):
-        return "E"
 
     @property
     def pos(self):
@@ -509,13 +508,10 @@ class RightData(Data):
 
 
 def rule_page(clock, old_size):
-    bg = pygame.image.load('data/images/tron-ssh-animated.gif').convert_alpha()
-    surface: pygame.Surface = pygame.display.set_mode(bg.get_size())
+    surface: pygame.Surface = pygame.display.set_mode(tron_gif.get_size())
     rect: pygame.Rect = surface.get_rect()
-    blank = pygame.Surface(bg.get_size(), pygame.SRCALPHA)
+    blank = pygame.Surface(tron_gif.get_size(), pygame.SRCALPHA)
     blank.fill((0, 0, 0, 150))
-    bg.blit(blank, bg.get_rect())
-    surface.blit(bg, bg.get_rect())
     intro_text = ['ПРАВИЛА ИГРЫ', "Цель игры: выжить самому и помешать в этом противнику", '']
     pl_count = 0
     for i in settings['players_name']:
@@ -551,7 +547,7 @@ def rule_page(clock, old_size):
         text.blit(string_rendered, intro_rect)
     text_rect = text.get_rect()
     scroll = None if text_size <= surface.get_height() else 0
-
+    tron_gif.play()
     while True:
         for event in pygame.event.get():
             exit_event(event)
@@ -571,20 +567,21 @@ def rule_page(clock, old_size):
                 return start_screen(clock, old_size)
         if scroll is not None:
             text_rect.y = -scroll
-        surface.blit(bg, surface.get_rect())
+
+        tron_gif.render(BG, (0, 0))
+        surface.blit(BG, BG.get_rect())
+        surface.blit(blank, blank.get_rect())
+
         surface.blit(text, text_rect)
         text_rect.y = 0
         pygame.display.flip()
 
 
 def start_screen(clock, old_size):
-    bg = pygame.image.load('data/images/tron-ssh-animated.gif').convert_alpha()
-    surface: pygame.Surface = pygame.display.set_mode(bg.get_size())
+    surface: pygame.Surface = pygame.display.set_mode(BG.get_size())
     rect: pygame.Rect = surface.get_rect()
-    blank = pygame.Surface(bg.get_size(), pygame.SRCALPHA)
+    blank = pygame.Surface(BG.get_size(), pygame.SRCALPHA)
     blank.fill((0, 0, 0, 150))
-    bg.blit(blank, bg.get_rect())
-    surface.blit(bg, bg.get_rect())
     logo_rect: pygame.Rect = LOGO_IMAGE.get_rect()
     logo_rect.center = surface.get_width() // 2, surface.get_height() // 5
     bg_color = to_color('steelblue')
@@ -612,23 +609,31 @@ def start_screen(clock, old_size):
     rule_b = Button(rule_rect, "Правила", 'white', bg_color, active_color)
     gui = GUI(settings_b, play_b, exit_b, rule_b)
 
+    tron_gif.play()
     while True:
         for event in pygame.event.get():
             exit_event(event)
             music_volume_event(event)
             gui.get_event(event)
-        surface.blit(bg, bg.get_rect())
+
+        tron_gif.render(BG, (0, 0))
+        surface.blit(BG, BG.get_rect())
+        surface.blit(blank, blank.get_rect())
         surface.blit(LOGO_IMAGE, logo_rect)
         gui.update()
         gui.render(surface)
-        if exit_b:
-            terminate()
-        if play_b:
-            pygame.display.set_mode(old_size)
-            return None
-        if rule_b:
-            return rule_page(clock, old_size)
+        try:
+            if exit_b:
+                terminate()
+            if play_b:
+                pygame.display.set_mode(old_size)
+                return None
+            if rule_b:
+                return rule_page(clock, old_size)
+        finally:
+            tron_gif.pause()
 
+        tron_gif.play()
         pygame.display.flip()
         clock.tick(settings['FPS'])
 
