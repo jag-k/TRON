@@ -122,7 +122,7 @@
     "file": "main.mp3",
     "loops": -1,
     "smooth": 150,
-    "max_volume": 50,
+    "max_volume": 30,
     "min_volume": 1,
     "start": 0.0
   },
