@@ -607,8 +607,8 @@ def start_screen(clock, old_size):
                        rect.centery // 5 + rect.centery
 
     settings_b = Button(settings_rect, "Настройки", 'white', bg_color, active_color, False)
-    play_b = Button(play_rect, "Играть", 'white', bg_color, active_color)
-    exit_b = Button(exit_rect, "Выйти", 'white', bg_color, active_color)
+    play_b = Button(play_rect, "Играть", 'white', to_color('green'), to_color('lightgreen'))
+    exit_b = Button(exit_rect, "Выйти", 'white', to_color('red'), to_color('#ff5c77'))
     rule_b = Button(rule_rect, "Правила", 'white', bg_color, active_color)
     gui = GUI(settings_b, play_b, exit_b, rule_b)
 
