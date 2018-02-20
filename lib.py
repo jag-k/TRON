@@ -6,7 +6,7 @@ from model_converter import *
 import os
 import pygame
 import time
-from pygame.color import THECOLORS
+# from pygame.color import THECOLORS
 pygame.init()
 
 
@@ -86,7 +86,25 @@ REVERSE_DIRECTIONAL = {
 
 STORE_COEFFICIENT = 1
 pygame.display.set_mode((1, 1))
-raw_logo = pygame.image.load(os.path.join('data', 'images', settings['textures']['logo'])).convert_alpha()
+
+
+def load_image(name, colorkey=None):
+    fullname = os.path.join('data', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Cannot load image:', name)
+        raise SystemExit(message)
+    image = image.convert_alpha()
+
+    if colorkey is not None:
+        if colorkey is -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    return image
+
+
+raw_logo = load_image(os.path.join('images', settings['textures']['logo']))
 pygame.display.quit()
 LOGO_IMAGE = pygame.transform.scale(raw_logo, (raw_logo.get_width()*3, raw_logo.get_height()*3))
 
@@ -152,7 +170,7 @@ def music_volume_event(event, coef=0.01):
         print_debug("Volume: %d" % (volume * 100))
 
 
-def get_screenshot(surface):
+def get_screenshot(surface=pygame.display.get_surface()):
     if not os.path.isdir('data/screenshots'):
         os.mkdir('data/screenshots')
     filename = time.strftime("data/screenshots/Screenshot %d.%m.%Y %H:%M:%S.png")

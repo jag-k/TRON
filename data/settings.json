@@ -18,9 +18,12 @@
     },
     "player1": {
       "name": "Jag_k",
-      "color": "darkblue",
+      "color": "green",
       "direction": "down",
-      "start_pos": [10, 10],
+      "start_pos": [
+        10,
+        10
+      ],
       "control": {
         "119": "up",
         "115": "down",
@@ -32,7 +35,10 @@
       "name": null,
       "color": "lightblue",
       "direction": "up",
-      "start_pos": [20, 20],
+      "start_pos": [
+        20,
+        20
+      ],
       "control": {
         "273": "up",
         "274": "down",
@@ -105,7 +111,10 @@
         "right": 235
       },
       "cell_size": 10,
-      "size": [30, 30]
+      "size": [
+        30,
+        30
+      ]
     }
   },
   "music": {

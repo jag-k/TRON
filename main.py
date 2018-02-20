@@ -4,27 +4,11 @@ import pygame
 pygame.init()
 
 
-def load_image(name, colorkey=None):
-    fullname = join('data', name)
-    try:
-        image = pygame.image.load(fullname)
-    except pygame.error as message:
-        print('Cannot load image:', name)
-        raise SystemExit(message)
-    image = image.convert_alpha()
-
-    if colorkey is not None:
-        if colorkey is -1:
-            colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
-    return image
-
-
 board = create_board()
 size = width, height = board.get_size
 running = True
 paused = False
-fps = 60
+fps = settings["FPS"]
 clock = pygame.time.Clock()
 bg = pygame.Color(settings['textures']['game']['color_bg'])
 pygame.display.set_caption(settings['textures']['window']['title'])
@@ -45,7 +29,7 @@ while running:
             board.next_step()
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_p:
-                get_screenshot(screen)
+                get_screenshot()
             if event.key == pygame.K_ESCAPE:
                 if not paused_screen(screen, clock):
                     terminate()
@@ -63,6 +47,7 @@ while running:
         board.render(screen)
         board.update()
         right_data.render(screen)
+    clock.tick(fps)
     pygame.display.flip()
 
 terminate()
