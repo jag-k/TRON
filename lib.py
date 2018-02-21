@@ -266,15 +266,11 @@ class Player(EmptyCell):
         self.tracks = []
         self.step = True
         self.next_count = 0
-        self.render_count = -1
         self.store = Store(self)
         self.color = pygame.Color(settings['players'][name]['color']
                                   if name in settings['players_name'] else
                                   settings['players_color']['default']['color'])
         print_debug("%s: %s" % (self.name, self.color))
-
-    def __str__(self):
-        return "P"
 
     @property
     def get_color(self):
@@ -340,8 +336,6 @@ class Track(EmptyCell):
         self.player = player
         self.start_dir, self.end_dir = dirs
 
-    def __str__(self):
-        return "T"
 
     def render(self, surface):
         if game_difficult != 'impossible':

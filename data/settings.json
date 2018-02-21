@@ -17,7 +17,7 @@
       }
     },
     "player1": {
-      "name": "Jag_k",
+      "name": null,
       "color": "green",
       "direction": "down",
       "start_pos": [

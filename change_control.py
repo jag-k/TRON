@@ -9,6 +9,8 @@ settings = json.load(open('data/settings.json'))
 player = select("Выберите игрока", *settings['players_name'])[0]
 # print(player)
 control = {}
+
+
 def main():
     pygame.display.set_mode((300, 200))
     for i in ['up', 'down', 'left', 'right']:
