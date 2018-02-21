@@ -85,7 +85,7 @@ REVERSE_DIRECTIONAL = {
 }
 
 
-STORE_COEFFICIENT = 1
+SCORE_COEFFICIENT = 1
 pygame.display.set_mode((1, 1))
 
 
@@ -175,12 +175,20 @@ def music_volume_event(event, coef=0.01):
         print_debug("Volume: %d" % (volume * 100))
 
 
-def get_screenshot(surface=pygame.display.get_surface()):
-    if not os.path.isdir('data/screenshots'):
-        os.mkdir('data/screenshots')
-    filename = time.strftime("data/screenshots/Screenshot %d.%m.%Y %H:%M:%S.png")
-    pygame.image.save(surface, filename)
-    print("Screenshot \"%s\" was been created" % (os.path.split(filename)[-1]))
+def get_screenshot(surface=None):
+    if surface is None:
+        surface = pygame.display.get_surface()
+    if surface is not None:
+        if not os.path.isdir('data/screenshots'):
+            os.mkdir('data/screenshots')
+        filename = time.strftime("data/screenshots/Screenshot %d.%m.%Y %H:%M:%S.png")
+        pygame.image.save(surface, filename)
+        print("Screenshot \"%s\" was been created" % (os.path.split(filename)[-1]))
+
+
+def screenshot_event(event):
+    if event.type == pygame.KEYDOWN and event.key == settings['screenshot_key']:
+        get_screenshot()
 
 
 def create_board():
@@ -208,37 +216,37 @@ except ImportError:
 # CLASSES
 
 
-class Store:
+class Score:
     def __init__(self, player):
-        self.file = './data/store.json'
+        self.file = './data/score.json'
         self.player = player
         self.count = 0
-        self.high_store = self.get_store[player.name] if player.name in self.get_store else 0
+        self.high_score = self.get_score[player.name] if player.name in self.get_score else 0
 
     def __str__(self):
-        return "%s: %d (HS: %d)" % (self.player.name, self.count, self.high_store)
+        return "%s: %d (HS: %d)" % (self.player.name, self.count, self.high_score)
 
     def __int__(self):
         return self.count
 
     @property
     def get_hs(self):
-        return self.high_store
+        return self.high_score
 
     @property
-    def get_store(self):
+    def get_score(self):
         return json.load(open(self.file))
 
-    def save_store(self):
-        result = self.get_store
-        result[self.player.name] = self.high_store
+    def save_score(self):
+        result = self.get_score
+        result[self.player.name] = self.high_score
         json.dump(result, open(self.file, 'w'), indent=2)
 
     def add_points(self, count):
-        self.count += count*STORE_COEFFICIENT
-        if self.count > self.high_store:
-            self.high_store = self.count
-        return self.save_store
+        self.count += count*SCORE_COEFFICIENT
+        if self.count > self.high_score:
+            self.high_score = self.count
+        return self.save_score
 
 
 class EmptyCell:
@@ -266,7 +274,7 @@ class Player(EmptyCell):
         self.tracks = []
         self.step = True
         self.next_count = 0
-        self.store = Store(self)
+        self.score = Score(self)
         self.color = pygame.Color(settings['players'][name]['color']
                                   if name in settings['players_name'] else
                                   settings['players_color']['default']['color'])
@@ -277,8 +285,8 @@ class Player(EmptyCell):
         return self.color
 
     @property
-    def get_store(self):
-        return self.store
+    def get_score(self):
+        return self.score
 
     def next(self):
         board = self.board.board
@@ -294,7 +302,7 @@ class Player(EmptyCell):
                 board[self.x][self.y] = track
                 self.tracks.append(track)
                 self.edit_dir(self.d)
-                self.store.add_points(settings['difficult'][game_difficult]['point_price'])
+                self.score.add_points(settings['difficult'][game_difficult]['point_price'])
 
                 self.x, self.y = nextx, nexty
                 board[self.x][self.y] = self
@@ -323,8 +331,8 @@ class Player(EmptyCell):
 
     def delete(self, full=False):
 
-        self.store.save_store()
-        print_debug(self.store)
+        self.score.save_score()
+        print_debug(self.score)
         self.board.board[self.x][self.y] = EmptyCell(self.x, self.y, self.board)
         if not full:
             self.board.board[self.startx][self.starty] = Player(self.start[0], self.start[1], self.board, self.name)
@@ -487,13 +495,13 @@ class RightData(Data):
     def render(self, surface):
         self.render_bg(surface)
 
-        store = [{"text": "%s: %d" % (i.display_name, i.get_store), "color": i.color, "player": i} for i in self.board.get_players]
-        store.sort(key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True)
-        hs = [{"text": "%s: %d" % (i['player'].display_name, i['player'].store.get_hs), "color": i['color']} for i in store]
+        score = [{"text": "%s: %d" % (i.display_name, i.get_score), "color": i.color, "player": i} for i in self.board.get_players]
+        score.sort(key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True)
+        hs = [{"text": "%s: %d" % (i['player'].display_name, i['player'].score.get_hs), "color": i['color']} for i in score]
 
         hs = list(sorted(hs, key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True))
         res = ["Mode:", {"text": game_difficult, "color": to_color(settings['difficult'][game_difficult]['color'])},
-               '', '', 'Total Store:'] + store + ['', '', 'High Store:'] + hs
+               '', '', 'Total Score:'] + score + ['', '', 'High Score:'] + hs
         for i in range(len(res)):
             data = (res[i]['text'], res[i]['color']) if type(res[i]) is dict else (res[i], to_color("white"))
             self.text(data[0], data[1], surface, i)
@@ -506,7 +514,12 @@ def rule_page(clock, old_size):
     rect: pygame.Rect = surface.get_rect()
     blank = pygame.Surface(tron_gif.get_size(), pygame.SRCALPHA)
     blank.fill((0, 0, 0, 150))
-    intro_text = ['ПРАВИЛА ИГРЫ', "Цель игры: выжить самому и помешать в этом противнику", '']
+    intro_text = ['ПРАВИЛА ИГРЫ', "Цель игры: выжить самому и помешать в этом противнику",
+                  'Для создания скриншота нажмите "%s"' % pygame.key.name(settings['screenshot_key']).upper(),
+                  '', 'Режим игры:', {'text': '    ' + game_difficult,
+                                      "color": settings['difficult'][game_difficult]['color']},
+                  'Очки за 1 пройденную клетку: %d' % settings['difficult'][game_difficult]['point_price'],
+                  'Скорость игры: %d' % settings['difficult'][game_difficult]['game_speed'], '']
     pl_count = 0
     for i in settings['players_name']:
         pl_count += 1
@@ -609,6 +622,7 @@ def start_screen(clock, old_size):
             exit_event(event)
             music_volume_event(event)
             gui.get_event(event)
+            screenshot_event(event)
 
         tron_gif.render(BG, (0, 0))
         surface.blit(BG, BG.get_rect())
@@ -639,7 +653,10 @@ def countdown(old_surface, surface, pos=0):
     font = pygame.font.Font(None, surface.get_height() // 3)
     val = settings['textures']['countdown']['values'][pos-1] if pos else {"text": '', "color": 'white'}
 
-    pygame.event.get()
+    for event in pygame.event.get():
+        exit_event(event)
+        music_volume_event(event)
+        screenshot_event(event)
 
     t = font.render(str(val['text']),
                     1, to_color(val['color']))
@@ -673,8 +690,8 @@ def paused_screen(surface, clock):
     ok_rect.centerx, ok_rect.centery = rect.centerx, rect.centery + rect.centery // 4
     ex_rect.centerx, ex_rect.centery = rect.centerx, rect.centery + rect.centery // 4 * 2
 
-    ok = Button(ok_rect, "Продолжить", bg_color=pygame.Color("green"), active_color=pygame.Color("lightgreen"))
-    ex = Button(ex_rect, "Выйти", bg_color=pygame.Color("red"), active_color=pygame.Color("#ff5c77"))
+    ok = Button(ok_rect, "Продолжить", 'white', bg_color=pygame.Color("green"), active_color=pygame.Color("lightgreen"))
+    ex = Button(ex_rect, "Выйти", 'white', bg_color=pygame.Color("red"), active_color=pygame.Color("#ff5c77"))
 
     gui = GUI(Label(pause_rect, "ПАУЗА", "white", text_position='center'), ok, ex)
     while True:
@@ -685,6 +702,7 @@ def paused_screen(surface, clock):
                 return countdown(old_surface, surface)
             music_volume_event(event, -0.01)
             gui.get_event(event)
+            screenshot_event(event)
 
         gui.render(surface)
         gui.update()

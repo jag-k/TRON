@@ -28,8 +28,7 @@ while running:
         if event.type == 25 and not paused:
             board.next_step()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_p:
-                get_screenshot()
+            screenshot_event(event)
             if event.key == pygame.K_ESCAPE:
                 if not paused_screen(screen, clock):
                     terminate()
