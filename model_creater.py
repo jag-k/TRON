@@ -6,8 +6,15 @@ import pygame
 
 from select_method import select
 
+SYMBOL_CODE = {
+    "■": True,
+    "□": False
+}
 
-# from .select import select
+REVERSED_SYMBOL_CODE = {
+    True: "■",
+    False: "□"
+}
 
 
 def model_name_format(s=str()):
@@ -50,7 +57,7 @@ class Board:
 
     def on_click(self, cell):
         x, y = cell
-        self.board[x][y] = int(not self.board[x][y])
+        self.board[x][y] = not self.board[x][y]
 
     def get_cell(self, mouse_pos):
         x_pos, y_pos = mouse_pos[0] - self.left, mouse_pos[1] - self.top
@@ -75,7 +82,7 @@ if select('Select', 'edit', 'create')[0] == 'edit':
     model_name = model_name_format(select("Select Model",
                                           *list(filter(lambda x: x.endswith('.model'), os.listdir('data/models/'))))[0])
     size = len(open(model_name).readline())-1
-    model = [[int(j) for j in i] for i in open(model_name).read().split('\n')]
+    model = [[SYMBOL_CODE[j] for j in i] for i in open(model_name).read().split('\n')]
     edited = True
 else:
     model_name = None
@@ -111,8 +118,8 @@ while running:
     board.render()
     pygame.display.flip()
 
-raw = '\n'.join(''.join(str(j) for j in i)
-                for i in np.transpose(np.array(board.board))).replace('0', '□').replace('1', '■')
+raw = '\n'.join(''.join(REVERSED_SYMBOL_CODE[j] for j in i)
+                for i in np.transpose(np.array(board.board)))
 pygame.quit()
 
 
