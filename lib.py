@@ -1,5 +1,7 @@
 import json
 import sys
+from traceback import print_exc
+
 from GUI import *
 from print_debug import print_debug, pprint_debug
 from model_converter import *
@@ -94,12 +96,14 @@ def load_image(name, colorkey=None):
     try:
         image = pygame.image.load(fullname)
     except pygame.error as message:
+
         print('Cannot load image:', name)
+        print_exc()
         raise SystemExit(message)
     image = image.convert_alpha()
 
     if colorkey is not None:
-        if colorkey is -1:
+        if colorkey == -1:
             colorkey = image.get_at((0, 0))
         image.set_colorkey(colorkey)
     return image
@@ -163,12 +167,12 @@ def init_music():
         music.play(settings['music']['loops'], settings['music']['start'])
         music.set_volume(0.0)
         music.pause()
-        pygame.time.set_timer(26, settings['music']['smooth'])
+        pygame.time.set_timer(pygame.USEREVENT, settings['music']['smooth'])
 
 
 def music_volume_event(event, coef=0.01):
     music.unpause()
-    if event.type == 26 and ((int(music.get_volume() * 100) < settings['music']['max_volume'] + 1) if coef > 0
+    if event.type == pygame.USEREVENT and ((int(music.get_volume() * 100) < settings['music']['max_volume'] + 1) if coef > 0
                              else (int(music.get_volume() * 100) > settings['music']['min_volume'])):
         volume = music.get_volume()
         music.set_volume(volume + coef)
@@ -193,7 +197,7 @@ def screenshot_event(event):
 
 def create_board():
     data = settings['textures']['board']
-    b = Board(30, 30, settings['players_name'], 15, **data['padding'])
+    b = Board(30, 30, settings['players_name'], 40, **data['padding'])
     b.show_border(settings['textures']['game']['show_border'])
     b.show_grid(settings['textures']['game']['show_grid'])
     return b
@@ -207,8 +211,9 @@ try:
             color = color.r, color.g, color.b
         c = colorchooser.askcolor(color, **option)[1]
         return pygame.Color(c), c
+
 except ImportError:
-    print("\x1b[31;1mPlease, install Tkinter (pip install python3-tk)\x1b[0m")
+    print("Please, install Tkinter (pip install python3-tk)", file=sys.stderr)
 
     def pallete(color=None, **option):
         return pygame.Color, color
@@ -343,7 +348,6 @@ class Track(EmptyCell):
         super().__init__(x, y, board)
         self.player = player
         self.start_dir, self.end_dir = dirs
-
 
     def render(self, surface):
         if game_difficult != 'impossible':
