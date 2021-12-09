@@ -4,8 +4,10 @@ import pygame
 
 pygame.init()
 
-SYMBOL_CODE = {"□": None,
-               "■": 'C'}
+SYMBOL_CODE = {
+    "□": None,
+    "■": 'C'
+}
 
 
 def to_color(color):
@@ -45,7 +47,13 @@ class Model:
     def update(model_name):
         model = {"name": os.path.split(model_name)[-1].lower().rstrip('.model')}
         model["full_name"] = os.path.join('data', 'models', model["name"] + '.model')
-        model['raw'] = [[y for y in x] for x in map(lambda x: x.strip(), open(model['full_name']).readlines())]
+        model['raw'] = [
+            [y for y in x] 
+            for x in map(
+                lambda x: x.strip(), 
+                open(model['full_name'], 'r', encoding='utf-8').readlines()
+            )
+        ]
 
         model['model'] = [[SYMBOL_CODE[model['raw'][x][y]]
                            for y in range(len(model['raw'][x]))]
