@@ -1,4 +1,5 @@
 import os
+
 symbols = set()
 models = list(filter(lambda x: x.endswith('.model'), os.listdir(os.getcwd())))
 for i in models:

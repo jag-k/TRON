@@ -1,10 +1,10 @@
 """GIFImage by Matthew Roe"""
 
-from PIL import Image
-import pygame
-from pygame.locals import *
-
 import time
+
+import pygame
+from PIL import Image
+from pygame.locals import *
 
 
 class GIFImage(object):
@@ -18,7 +18,7 @@ class GIFImage(object):
         self.ptime = time.time()
 
         self.running = True
-        self.breakpoint = len(self.frames)-1
+        self.breakpoint = len(self.frames) - 1
         self.startpoint = 0
         self.reversed = False
 
@@ -31,7 +31,7 @@ class GIFImage(object):
         pal = image.getpalette()
         base_palette = []
         for i in range(0, len(pal), 3):
-            rgb = pal[i:i+3]
+            rgb = pal[i:i + 3]
             base_palette.append(rgb)
 
         all_tiles = []
@@ -41,7 +41,7 @@ class GIFImage(object):
                     image.seek(0)
                 if image.tile:
                     all_tiles.append(image.tile[0][3][0])
-                image.seek(image.tell()+1)
+                image.seek(image.tell() + 1)
         except EOFError:
             image.seek(0)
 
@@ -51,10 +51,10 @@ class GIFImage(object):
             while 1:
                 try:
                     duration = image.info["duration"]
-                except:
+                except KeyError:
                     duration = 100
 
-                duration *= .001 #convert to milliseconds!
+                duration *= .001  # convert to milliseconds!
                 cons = False
 
                 x0, y0, x1, y1 = (0, 0) + image.size
@@ -72,13 +72,13 @@ class GIFImage(object):
                         pal = image.getpalette()
                         palette = []
                         for i in range(0, len(pal), 3):
-                            rgb = pal[i:i+3]
+                            rgb = pal[i:i + 3]
                             palette.append(rgb)
                     elif all_tiles in ((7, 8), (8, 7)):
                         pal = image.getpalette()
                         palette = []
                         for i in range(0, len(pal), 3):
-                            rgb = pal[i:i+3]
+                            rgb = pal[i:i + 3]
                             palette.append(rgb)
                     else:
                         palette = base_palette
@@ -92,27 +92,26 @@ class GIFImage(object):
                 pi2 = pygame.Surface(image.size, SRCALPHA)
                 if cons:
                     for i in self.frames:
-                        pi2.blit(i[0], (0,0))
-                pi2.blit(pi, (x0, y0), (x0, y0, x1-x0, y1-y0))
+                        pi2.blit(i[0], (0, 0))
+                pi2.blit(pi, (x0, y0), (x0, y0, x1 - x0, y1 - y0))
 
                 self.frames.append([pi2, duration])
-                image.seek(image.tell()+1)
+                image.seek(image.tell() + 1)
         except EOFError:
             pass
 
     def render(self, screen, pos):
-        if self.running:
-            if time.time() - self.ptime > self.frames[self.cur][1]:
-                if self.reversed:
-                    self.cur -= 1
-                    if self.cur < self.startpoint:
-                        self.cur = self.breakpoint
-                else:
-                    self.cur += 1
-                    if self.cur > self.breakpoint:
-                        self.cur = self.startpoint
+        if self.running and time.time() - self.ptime > self.frames[self.cur][1]:
+            if self.reversed:
+                self.cur -= 1
+                if self.cur < self.startpoint:
+                    self.cur = self.breakpoint
+            else:
+                self.cur += 1
+                if self.cur > self.breakpoint:
+                    self.cur = self.startpoint
 
-                self.ptime = time.time()
+            self.ptime = time.time()
 
         screen.blit(self.frames[self.cur][0], pos)
 
@@ -121,7 +120,7 @@ class GIFImage(object):
         if self.cur < 0:
             self.cur = 0
         if self.cur >= len(self.frames):
-            self.cur = len(self.frames)-1
+            self.cur = len(self.frames) - 1
 
     def set_bounds(self, start, end):
         if start < 0:
@@ -145,19 +144,25 @@ class GIFImage(object):
 
     def rewind(self):
         self.seek(0)
+
     def fastforward(self):
-        self.seek(self.length()-1)
+        self.seek(self.length() - 1)
 
     def get_height(self):
         return self.image.size[1]
+
     def get_width(self):
         return self.image.size[0]
+
     def get_size(self):
         return self.image.size
+
     def length(self):
         return len(self.frames)
+
     def reverse(self):
         self.reversed = not self.reversed
+
     def reset(self):
         self.cur = 0
         self.ptime = time.time()

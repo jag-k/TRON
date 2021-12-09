@@ -1,8 +1,8 @@
+import pygame
+
 from lib import *
 
-import pygame
 pygame.init()
-
 
 board = create_board()
 size = width, height = board.get_size
@@ -18,7 +18,7 @@ init_music()
 
 screen = pygame.display.set_mode(size)
 start_screen(clock, size)
-right_data = RightData(pygame.Rect((screen.get_width()-200, 0), (200, screen.get_height())), board, "gray35")
+right_data = RightData(pygame.Rect((screen.get_width() - 200, 0), (200, screen.get_height())), board, "gray35")
 pygame.time.set_timer(25, settings['difficult'][game_difficult]['game_speed'])
 
 while running:
@@ -29,9 +29,8 @@ while running:
             board.next_step()
         if event.type == pygame.KEYDOWN:
             screenshot_event(event)
-            if event.key == pygame.K_ESCAPE:
-                if not paused_screen(screen, clock):
-                    terminate()
+            if event.key == pygame.K_ESCAPE and not paused_screen(screen, clock):
+                terminate()
             if event.key == pygame.K_r:
                 board = create_board()
             if event.key == pygame.K_SPACE and settings['debug']:

@@ -126,6 +126,6 @@
     "min_volume": 1,
     "start": 0.0
   },
-  "FPS": 60,
+  "FPS": 30,
   "screenshot_key": 112
 }

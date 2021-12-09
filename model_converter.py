@@ -1,6 +1,6 @@
-import pygame
-
 import os
+
+import pygame
 
 pygame.init()
 
@@ -44,7 +44,7 @@ class Model:
     @staticmethod
     def update(model_name):
         model = {"name": os.path.split(model_name)[-1].lower().rstrip('.model')}
-        model["full_name"] = os.path.join('data', 'models', model["name"]+'.model')
+        model["full_name"] = os.path.join('data', 'models', model["name"] + '.model')
         model['raw'] = [[y for y in x] for x in map(lambda x: x.strip(), open(model['full_name']).readlines())]
 
         model['model'] = [[SYMBOL_CODE[model['raw'][x][y]]

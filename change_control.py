@@ -1,8 +1,9 @@
-from pprint import pprint
+import json
 
 import pygame
-import json
+
 from select_method import select
+
 pygame.init()
 settings = json.load(open('data/settings.json'))
 # pprint(settings, width=120)

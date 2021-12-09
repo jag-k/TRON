@@ -1,11 +1,12 @@
 import pygame
+
 pygame.init()
 
 
 class GUI:
     def __init__(self, *elemets):
         self.element = elemets
-        self.active_tb = len(self.textbox_list)-1
+        self.active_tb = len(self.textbox_list) - 1
         self.check = True
 
     @property
@@ -61,7 +62,7 @@ class Label:
         self.text_pos = text_position
         self.font_color = pygame.Color(text_color)
         self.bg_color = None if bg_color == -1 else \
-            (bg_color if type(bg_color) is pygame.Color else pygame.Color(bg_color))
+            (bg_color if isinstance(bg_color, pygame.Color) else pygame.Color(bg_color))
         self.font = pygame.font.Font(None, self.Rect.height - 4)
         self.rendered_text = None
         self.rendered_rect = None
@@ -93,8 +94,8 @@ class TextBox(Label):
 
     @property
     def get_text(self):
-        return [self.text[:len(self.text)-self.shift] if self.shift else self.text,
-                self.text[len(self.text)-self.shift:]]
+        return [self.text[:len(self.text) - self.shift] if self.shift else self.text,
+                self.text[len(self.text) - self.shift:]]
 
     def get_event(self, event):
         if event.type == pygame.KEYDOWN and self.focus:
@@ -123,7 +124,7 @@ class TextBox(Label):
             if self.focus:
                 t = ''
                 in_text = False
-                for i in self.text+' ':
+                for i in self.text + ' ':
                     rect = self.font.render(t, 1, self.font_color).get_rect(x=self.Rect.x + 2,
                                                                             centery=self.Rect.centery)
                     if rect.collidepoint(*event.pos):
@@ -170,8 +171,8 @@ class Button(Label):
         text = ''
         for t in self.text:
             text += t
-            if self.font.size(text+'...')[0] > self.Rect.width - 7 or self.font.size(text)[0] > self.Rect.width:
-                text = text+('...' if not text.startswith(self.text) else '')
+            if self.font.size(text + '...')[0] > self.Rect.width - 7 or self.font.size(text)[0] > self.Rect.width:
+                text = text + ('...' if not text.startswith(self.text) else '')
                 break
         self.rendered_text = self.font.render(text, 1, self.font_color)
 

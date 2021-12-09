@@ -1,5 +1,5 @@
-from pprint import pprint
 import os
+from pprint import pprint
 
 next_model = {"u": "r", "r": "d", "d": "l", "l": "u", "c": "c"}
 # next_model = {"u": "l", "d": "r", "r": "u", "l": "d", "c": "c"}
@@ -11,7 +11,7 @@ def rename(s):
     for i in s.split('_')[0]:
         r += next_model[i]
     r = ''.join(sorted(r))
-    r += '_'+s.split('_')[1]
+    r += '_' + s.split('_')[1]
     return r
 
 

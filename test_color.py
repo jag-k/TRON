@@ -1,4 +1,5 @@
 import pygame
+
 from model_converter import to_color
 
 pygame.init()

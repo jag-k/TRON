@@ -1,5 +1,5 @@
-from pprint import pprint as pp
 import json
+from pprint import pprint as pp
 
 SETTINGS_FILE = 'data/settings.json'
 

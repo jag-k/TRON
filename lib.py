@@ -1,20 +1,18 @@
 import json
 import sys
-from GUI import *
-from print_debug import print_debug, pprint_debug
-from model_converter import *
-import os
-import pygame
 import time
+
 from GIFImage import GIFImage
+from GUI import *
+from model_converter import *
+from print_debug import print_debug, pprint_debug
+
 # from pygame.color import THECOLORS
 pygame.init()
-
 
 # SETTINGS
 
 game_difficult = 'normal'
-
 
 settings = {}
 
@@ -32,7 +30,6 @@ def save_setting():
 
 update_settings()
 
-
 # CONSTANTS AND VARIABLES
 
 W = pygame.K_w
@@ -40,20 +37,17 @@ A = pygame.K_a
 S = pygame.K_s
 D = pygame.K_d
 
-
 D_UP = (0, -1)
 D_DOWN = (0, 1)
 D_RIGHT = (1, 0)
 D_LEFT = (-1, 0)
 D_CENTER = (0, 0)
 
-
 UP = "up"
 DOWN = "down"
 RIGHT = "right"
 LEFT = "left"
 CENTER = "center"
-
 
 CONVERT_DIRECTIONAL = {
     UP: D_UP,
@@ -69,7 +63,6 @@ CONVERT_DIRECTIONAL = {
     D_CENTER: CENTER
 }
 
-
 REVERSE_DIRECTIONAL = {
     UP: DOWN,
     DOWN: UP,
@@ -83,7 +76,6 @@ REVERSE_DIRECTIONAL = {
     D_RIGHT: D_LEFT,
     D_CENTER: D_CENTER,
 }
-
 
 SCORE_COEFFICIENT = 1
 pygame.display.set_mode((1, 1))
@@ -99,7 +91,7 @@ def load_image(name, colorkey=None):
     image = image.convert_alpha()
 
     if colorkey is not None:
-        if colorkey is -1:
+        if colorkey == -1:
             colorkey = image.get_at((0, 0))
         image.set_colorkey(colorkey)
     return image
@@ -109,14 +101,13 @@ raw_logo = load_image(os.path.join('images', settings['textures']['logo']))
 tron_gif = GIFImage('data/images/tron-ssh-animated.gif')
 tron_gif.pause()
 pygame.display.quit()
-LOGO_IMAGE = pygame.transform.scale(raw_logo, (raw_logo.get_width()*3, raw_logo.get_height()*3))
+LOGO_IMAGE = pygame.transform.scale(raw_logo, (raw_logo.get_width() * 3, raw_logo.get_height() * 3))
 
 all_boards = []
 music = pygame.mixer.music
 join = os.path.join
 BG = pygame.Surface(tron_gif.get_size())
 tron_gif.render(BG, (0, 0))
-
 
 # MODELS
 
@@ -136,13 +127,14 @@ models = {
 
 pprint_debug(models)
 
+
 # METHODS
 
 
 def edit_pos(pos1, pos2):
     x1, y1 = pos1
     x2, y2 = pos2
-    return x1+x2, y1+y2
+    return x1 + x2, y1 + y2
 
 
 def terminate():
@@ -169,7 +161,7 @@ def init_music():
 def music_volume_event(event, coef=0.01):
     music.unpause()
     if event.type == 26 and ((int(music.get_volume() * 100) < settings['music']['max_volume'] + 1) if coef > 0
-                             else (int(music.get_volume() * 100) > settings['music']['min_volume'])):
+    else (int(music.get_volume() * 100) > settings['music']['min_volume'])):
         volume = music.get_volume()
         music.set_volume(volume + coef)
         print_debug("Volume: %d" % (volume * 100))
@@ -202,6 +194,7 @@ def create_board():
 try:
     from tkinter import colorchooser
 
+
     def palette(color=None, **option):
         if type(color) is pygame.Color:
             color = color.r, color.g, color.b
@@ -210,8 +203,10 @@ try:
 except ImportError:
     print("\x1b[31;1mPlease, install Tkinter (pip install python3-tk)\x1b[0m")
 
+
     def pallete(color=None, **option):
         return pygame.Color, color
+
 
 # CLASSES
 
@@ -243,7 +238,7 @@ class Score:
         json.dump(result, open(self.file, 'w'), indent=2)
 
     def add_points(self, count):
-        self.count += count*SCORE_COEFFICIENT
+        self.count += count * SCORE_COEFFICIENT
         if self.count > self.high_score:
             self.high_score = self.count
         return self.save_score
@@ -324,10 +319,9 @@ class Player(EmptyCell):
             self.d = dir
 
     def get_event(self, event):
-        if event.type == pygame.KEYDOWN and self.step:
-            if str(event.key) in self.control:
-                self.edit_dir(self.control[str(event.key)])
-                self.step = False
+        if event.type == pygame.KEYDOWN and self.step and str(event.key) in self.control:
+            self.edit_dir(self.control[str(event.key)])
+            self.step = False
 
     def delete(self, full=False):
 
@@ -343,7 +337,6 @@ class Track(EmptyCell):
         super().__init__(x, y, board)
         self.player = player
         self.start_dir, self.end_dir = dirs
-
 
     def render(self, surface):
         if game_difficult != 'impossible':
@@ -423,13 +416,13 @@ class Board:
     @staticmethod
     def rotate(array, rotate=1):
         res = array
-        for i in range(rotate):
+        for _ in range(rotate):
             res = list(zip(*res[::-1]))
         return res
 
     @property
     def global_rect(self):
-        return pygame.Rect((self.left, self.top), (self.width*self.cell_size, self.height*self.cell_size))
+        return pygame.Rect((self.left, self.top), (self.width * self.cell_size, self.height * self.cell_size))
 
     def __iter__(self):
         return self.flat
@@ -495,9 +488,11 @@ class RightData(Data):
     def render(self, surface):
         self.render_bg(surface)
 
-        score = [{"text": "%s: %d" % (i.display_name, i.get_score), "color": i.color, "player": i} for i in self.board.get_players]
+        score = [{"text": "%s: %d" % (i.display_name, i.get_score), "color": i.color, "player": i} for i in
+                 self.board.get_players]
         score.sort(key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True)
-        hs = [{"text": "%s: %d" % (i['player'].display_name, i['player'].score.get_hs), "color": i['color']} for i in score]
+        hs = [{"text": "%s: %d" % (i['player'].display_name, i['player'].score.get_hs), "color": i['color']} for i in
+              score]
 
         hs = list(sorted(hs, key=lambda x: (int(x['text'].split(': ')[1]), x['text'].split(': ')[0]), reverse=True))
         res = ["Mode:", {"text": game_difficult, "color": to_color(settings['difficult'][game_difficult]['color'])},
@@ -506,12 +501,12 @@ class RightData(Data):
             data = (res[i]['text'], res[i]['color']) if type(res[i]) is dict else (res[i], to_color("white"))
             self.text(data[0], data[1], surface, i)
 
+
 # INTERFACE
 
 
 def rule_page(clock, old_size):
     surface: pygame.Surface = pygame.display.set_mode(tron_gif.get_size())
-    rect: pygame.Rect = surface.get_rect()
     blank = pygame.Surface(tron_gif.get_size(), pygame.SRCALPHA)
     blank.fill((0, 0, 0, 150))
     intro_text = ['ПРАВИЛА ИГРЫ', "Цель игры: выжить самому и помешать в этом противнику",
@@ -563,14 +558,14 @@ def rule_page(clock, old_size):
                 if scroll is not None and event.button in (4, 5):
                     shift = int(1 if event.button % 2 else -1) * 10
                     scroll += shift if (scroll + shift) in range(0, text_size - surface.get_height() + 10) else 0
-            if event.type == pygame.MOUSEBUTTONUP and event.button not in (4, 5):
+            elif event.type == pygame.MOUSEBUTTONUP and event.button not in (4, 5):
                 return start_screen(clock, old_size)
 
-            if event.type == pygame.KEYDOWN and event.key in (273, 274):
+            elif event.type == pygame.KEYDOWN and event.key in (273, 274):
                 if scroll is not None and event.key in (273, 274):
                     shift = int(1 if not event.key % 2 else -1) * 10
                     scroll += shift if (scroll + shift) in range(0, text_size - surface.get_height() + 10) else 0
-            if event.type == pygame.KEYUP and event.key not in (273, 274):
+            elif event.type == pygame.KEYUP and event.key not in (273, 274):
                 return start_screen(clock, old_size)
         if scroll is not None:
             text_rect.y = -scroll
@@ -651,7 +646,7 @@ def countdown(old_surface, surface, pos=0):
     if pos > len(settings['textures']['countdown']['values']):
         return True
     font = pygame.font.Font(None, surface.get_height() // 3)
-    val = settings['textures']['countdown']['values'][pos-1] if pos else {"text": '', "color": 'white'}
+    val = settings['textures']['countdown']['values'][pos - 1] if pos else {"text": '', "color": 'white'}
 
     for event in pygame.event.get():
         exit_event(event)
@@ -669,7 +664,7 @@ def countdown(old_surface, surface, pos=0):
         pygame.time.wait(settings['textures']['countdown']['time'])
     surface.blit(old_surface, surface.get_rect())
     pygame.display.flip()
-    return countdown(old_surface, surface, pos+1)
+    return countdown(old_surface, surface, pos + 1)
 
 
 def paused_screen(surface, clock):

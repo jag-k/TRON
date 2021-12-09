@@ -1,7 +1,6 @@
-import numpy as np
-
 import os
 
+import numpy as np
 import pygame
 
 from select_method import select
@@ -18,7 +17,8 @@ REVERSED_SYMBOL_CODE = {
 
 
 def model_name_format(s=str()):
-    return os.path.join('data', 'models', s.lower().strip().rstrip('.model') + '.model')
+    ext = '.model'
+    return os.path.join('data', 'models', s.lower().strip().rstrip(ext) + ext)
 
 
 def save():
@@ -34,7 +34,7 @@ class Board:
         self.cell_size = cell_size
         self.top = 10
         self.left = 10
-        self.board = [[0 for y in range(height)] for x in range(width)]
+        self.board = [[0 for _ in range(height)] for _ in range(width)]
 
     @property
     def get_size(self):
@@ -52,7 +52,8 @@ class Board:
     def render(self):
         for x in range(self.width):
             for y in range(self.height):
-                pygame.draw.rect(screen, (0, 255, 0) if x == self.width//2 or y == self.height//2 else (255, 255, 255),
+                pygame.draw.rect(screen,
+                                 (0, 255, 0) if x == self.width // 2 or y == self.height // 2 else (255, 255, 255),
                                  self.rect(x, y), int(not self.board[x][y]))
 
     def on_click(self, cell):
@@ -81,7 +82,7 @@ edited = False
 if select('Select', 'edit', 'create')[0] == 'edit':
     model_name = model_name_format(select("Select Model",
                                           *list(filter(lambda x: x.endswith('.model'), os.listdir('data/models/'))))[0])
-    size = len(open(model_name).readline())-1
+    size = len(open(model_name).readline()) - 1
     model = [[SYMBOL_CODE[j] for j in i] for i in open(model_name).read().split('\n')]
     edited = True
 else:
@@ -96,23 +97,21 @@ screen = pygame.display.set_mode(size)
 running = True
 drawing = False
 
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 board.get_click(event.pos)
                 if not drawing:
                     drawing = bool(board.get_cell_status(event.pos))
 
-        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             drawing = False
 
-        if event.type == pygame.MOUSEMOTION and drawing:
-            if not board.get_cell_status(event.pos):
-                board.get_click(event.pos)
+        elif event.type == pygame.MOUSEMOTION and drawing and not board.get_cell_status(event.pos):
+            board.get_click(event.pos)
 
     screen.fill((0, 0, 0))
     board.render()
@@ -122,7 +121,6 @@ raw = '\n'.join(''.join(REVERSED_SYMBOL_CODE[j] for j in i)
                 for i in np.transpose(np.array(board.board)))
 pygame.quit()
 
-
 try:
     if model_name is None:
         model_name = model_name_format(input('Enter model name (without \x1b[4;1m.model\x1b[0m expand): '))
@@ -131,4 +129,4 @@ try:
         save()
 except KeyboardInterrupt:
     print('\n\x1b[31mMODEL DOESN\'T SAVE\x1b[0m')
-    SystemExit()
+    raise SystemExit()
