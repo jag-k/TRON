@@ -1,8 +1,12 @@
 # TRON
- This is "THE TRON" game on python3.4+ with pygame and pillow libs
+
+This is "THE TRON" game on python3.4+ with pygame and pillow libs
  
- Video: https://vk.com/video?z=video173996641_456239097
+Video: https://vk.com/video?z=video173996641_456239097
+
+ Current Branch: Develop
+
+ ## It's a main branch!))
+
 
 Creators: Jag_k
-
-P.S.: Use the `develop` branch: https://github.com/jag-k/TRON/tree/develop
